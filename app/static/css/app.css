@@ -1302,6 +1302,7 @@ a.askly-nav-item.is-active:hover {
 /* ── Main Content ──────────────────────────────────────────── */
 .askly-main {
   flex: 1;
+  min-width: 0;
   margin-left: 280px;
   display: flex;
   flex-direction: column;

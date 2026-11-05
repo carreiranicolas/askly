@@ -425,7 +425,7 @@
         <div class="askly-card" style="padding: var(--ask-space-5);">
           <h3 class="ticket-section-title">Cancelar chamado</h3>
           <p>Disponível enquanto o atendimento não tiver sido iniciado. O chamado será excluído.</p>
-          <form method="post" action="{{ url_for('web_tickets.cancelar', id=chamado.id) }}">
+          <form method="post" action="{{ url_for('web_tickets.cancelar', id=chamado.id) }}" onsubmit="return confirm('Cancelar e excluir este chamado? Esta ação não pode ser desfeita.')">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
             <button class="askly-btn askly-btn--danger" type="submit">Cancelar e excluir</button>
           </form>

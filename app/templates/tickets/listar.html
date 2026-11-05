@@ -13,7 +13,7 @@
 {% endblock %}
 
 {% block content %}
-  {% set has_filters = filters.tipo or filters.categoria_id or filters.status or filters.priority_id or filters.sla or filters.data or q %}
+  {% set has_filters = (filters.tipo if is_admin else None) or filters.categoria_id or filters.status or filters.priority_id or filters.sla or filters.data or q %}
   <form method="get" action="{{ url_for('web_tickets.listar') }}" class="askly-card askly-filters askly-stagger">
     <div class="askly-filters__header">
       <h2 class="askly-filters__title">
@@ -29,14 +29,16 @@
 
     <div class="askly-filters__body">
       <div class="askly-filters__grid">
+        {% if is_admin %}
         <div class="askly-filters__field">
           <label class="askly-filter-label" for="filter-tipo">Visão</label>
           <select class="askly-input askly-input--no-icon" id="filter-tipo" name="tipo">
             <option value="" {{ 'selected' if not filters.tipo }}>Todos os chamados</option>
             <option value="meus" {{ 'selected' if filters.tipo == 'meus' }}>Chamados que abri</option>
-            {% if is_admin %}<option value="atribuidos" {{ 'selected' if filters.tipo == 'atribuidos' }}>Atribuídos a mim</option>{% endif %}
+            <option value="atribuidos" {{ 'selected' if filters.tipo == 'atribuidos' }}>Atribuídos a mim</option>
           </select>
         </div>
+        {% endif %}
 
         {% if is_admin %}
         <div class="askly-filters__field">

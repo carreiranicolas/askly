@@ -37,22 +37,22 @@
         </a>
         {% endif %}
 
+        {# `categoria` permanece aceito para bookmarks antigos. #}
+        {% set _cat_arg = request.args.get('categoria_id') or request.args.get('categoria') %}
         <div class="askly-nav-divider">Meus Chamados</div>
-        <a href="{{ url_for('web_tickets.listar', tipo='meus') }}" class="askly-nav-item {{ 'is-active' if request.endpoint == 'web_tickets.listar' and request.args.get('tipo') == 'meus' else '' }}">
+        <a href="{{ url_for('web_tickets.listar', tipo='meus') }}" class="askly-nav-item {{ 'is-active' if request.endpoint == 'web_tickets.listar' and (request.args.get('tipo') == 'meus' or (not is_admin and not _cat_arg)) else '' }}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
           </svg>
           Chamados que abri
         </a>
+        {% if is_admin %}
         <a href="{{ url_for('web_tickets.listar', tipo='atribuidos') }}" class="askly-nav-item {{ 'is-active' if request.endpoint == 'web_tickets.listar' and request.args.get('tipo') == 'atribuidos' else '' }}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
           </svg>
           Atribuídos a mim
         </a>
-        {# `categoria_id` é o nome canônico (alinhado com a API). Aceitamos
-           `categoria` também por compatibilidade com bookmarks antigos. #}
-        {% set _cat_arg = request.args.get('categoria_id') or request.args.get('categoria') %}
         <a href="{{ url_for('web_tickets.listar') }}" class="askly-nav-item {{ 'is-active' if request.endpoint == 'web_tickets.listar' and not request.args.get('tipo') and not _cat_arg else '' }}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="7" height="7"></rect>
@@ -62,6 +62,7 @@
           </svg>
           Todos os chamados
         </a>
+        {% endif %}
 
         {# Admin enxerga todas as áreas; demais usuários, apenas a própria. #}
         {% set sidebar_areas = get_categorias() if is_admin else ([current_user.area] if (current_user.is_authenticated and current_user.area) else []) %}

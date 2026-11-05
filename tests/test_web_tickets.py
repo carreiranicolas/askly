@@ -66,6 +66,8 @@ def test_listar_mostra_chamado_aberto(client, make_user, web_login, catalog):
     page = client.get("/chamados/", follow_redirects=True)
     assert page.status_code == 200
     assert b"Impressora travada" in page.data
+    assert "Atribuídos a mim" not in page.get_data(as_text=True)
+    assert "Todos os chamados" not in page.get_data(as_text=True)
 
 
 def test_listar_filtro_por_status(client, make_user, web_login, catalog):
