@@ -1,7 +1,5 @@
-{% extends "layouts/base.html" %}
+{% extends "errors/_error_layout.html" %}
+{% set error_code = "401" %}
+{% set error_title = "Não autenticado" %}
+{% set error_message = "É necessário fazer login para acessar este recurso." %}
 {% block title %}401 | Askly{% endblock %}
-{% block content %}
-  <h1 class="title">401</h1>
-  <p>Autenticação necessária.</p>
-{% endblock %}
-

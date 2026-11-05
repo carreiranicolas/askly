@@ -1,7 +1,7 @@
 {% extends "layouts/app.html" %}
-{% block title %}Chamados | Askly{% endblock %}
+{% block title %}Relatório de chamados | Askly{% endblock %}
 
-{% block page_title %}Meus Chamados{% endblock %}
+{% block page_title %}Relatório de chamados{% endblock %}
 {% block page_actions %}
   <a class="askly-btn askly-btn--primary" href="{{ url_for('web_tickets.novo') }}">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -13,46 +13,155 @@
 {% endblock %}
 
 {% block content %}
+  {% set has_filters = (filters.tipo if is_admin else None) or filters.categoria_id or filters.status or filters.priority_id or filters.sla or filters.data or q %}
+  <form method="get" action="{{ url_for('web_tickets.listar') }}" class="askly-card askly-filters askly-stagger">
+    <div class="askly-filters__header">
+      <h2 class="askly-filters__title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+        </svg>
+        Filtros
+      </h2>
+      {% if has_filters %}
+        <a class="askly-filters__clear" href="{{ url_for('web_tickets.listar') }}">Limpar tudo</a>
+      {% endif %}
+    </div>
+
+    <div class="askly-filters__body">
+      <div class="askly-filters__grid">
+        {% if is_admin %}
+        <div class="askly-filters__field">
+          <label class="askly-filter-label" for="filter-tipo">Visão</label>
+          <select class="askly-input askly-input--no-icon" id="filter-tipo" name="tipo">
+            <option value="" {{ 'selected' if not filters.tipo }}>Todos os chamados</option>
+            <option value="meus" {{ 'selected' if filters.tipo == 'meus' }}>Chamados que abri</option>
+            <option value="atribuidos" {{ 'selected' if filters.tipo == 'atribuidos' }}>Atribuídos a mim</option>
+          </select>
+        </div>
+        {% endif %}
+
+        {% if is_admin %}
+        <div class="askly-filters__field">
+          <label class="askly-filter-label" for="filter-area">Área</label>
+          <select class="askly-input askly-input--no-icon" id="filter-area" name="categoria_id">
+            <option value="" {{ 'selected' if not filters.categoria_id }}>Todas as áreas</option>
+            {% for cat in categorias %}
+              <option value="{{ cat.id }}" {{ 'selected' if filters.categoria_id == cat.id }}>{{ cat.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+
+        <div class="askly-filters__field">
+          <label class="askly-filter-label" for="filter-data">Data</label>
+          <input class="askly-input askly-input--no-icon" id="filter-data" type="date" name="data" value="{{ filters.data or '' }}" />
+        </div>
+
+        <div class="askly-filters__field">
+          <label class="askly-filter-label" for="filter-status">Status</label>
+          <select class="askly-input askly-input--no-icon" id="filter-status" name="status">
+            <option value="" {{ 'selected' if not filters.status }}>Todos os status</option>
+            {% for s in status_options %}
+              <option value="{{ s.name }}" {{ 'selected' if filters.status == s.name }}>{{ s.value }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="askly-filters__field">
+          <label class="askly-filter-label" for="filter-prioridade">Prioridade</label>
+          <select class="askly-input askly-input--no-icon" id="filter-prioridade" name="priority_id">
+            <option value="" {{ 'selected' if not filters.priority_id }}>Todas as prioridades</option>
+            {% for p in prioridades %}
+              <option value="{{ p.id }}" {{ 'selected' if filters.priority_id == p.id }}>{{ p.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="askly-filters__field">
+          <label class="askly-filter-label" for="filter-sla">SLA</label>
+          <select class="askly-input askly-input--no-icon" id="filter-sla" name="sla">
+            <option value="" {{ 'selected' if not filters.sla }}>Todos</option>
+            <option value="atrasado" {{ 'selected' if filters.sla == 'atrasado' }}>Atrasados</option>
+            <option value="no_prazo" {{ 'selected' if filters.sla == 'no_prazo' }}>No prazo</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="askly-filters__footer">
+        <div class="askly-filters__search">
+          <label class="askly-filter-label" for="filter-q">Busca</label>
+          <div class="askly-input-wrap">
+            <svg class="askly-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input class="askly-input" id="filter-q" type="search" name="q" value="{{ q }}" placeholder="Nº, título ou descrição..." autocomplete="off" />
+          </div>
+        </div>
+        <div class="askly-filters__actions">
+          <button class="askly-btn askly-btn--primary" type="submit">Filtrar</button>
+          {% if has_filters %}
+            <a class="askly-btn askly-btn--secondary" href="{{ url_for('web_tickets.listar') }}">Limpar</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </form>
+
   <div class="askly-card askly-stagger">
     <div class="askly-table-wrapper">
       <table class="askly-table">
         <thead>
           <tr>
+            <th>Nº</th>
             <th>Título</th>
+            <th>Item / Etiqueta</th>
+            <th>Descrição do problema</th>
             <th>Status</th>
             <th>Prioridade</th>
-            <th>Categoria</th>
-            <th>Criado em</th>
+            <th>Área</th>
+            <th>SLA</th>
+            <th>Data</th>
           </tr>
         </thead>
         <tbody>
           {% for c in chamados.items %}
             <tr>
+              <td><span class="askly-kbd">#{{ c.id }}</span></td>
               <td>
-                <a href="{{ url_for('web_tickets.detalhe', id=c.id) }}">{{ c.titulo }}</a>
+                <a href="{{ url_for('web_tickets.detalhe', id=c.id) }}">{{ c.title }}</a>
               </td>
+              <td>{{ c.item_name }} · {{ c.equipment_tag }}</td>
+              <td style="min-width: 220px; white-space: pre-wrap;">{{ c.description }}</td>
               <td>
-                <span class="askly-badge askly-badge--{{ 'info' if c.status.name == 'ABERTO' else ('warning' if c.status.name == 'EM_ANDAMENTO' else 'success') }}">
-                  {{ c.status_display }}
+                <span class="askly-badge askly-badge--{{ 'success' if c.status.name == 'EM_ABERTO' else ('warning' if c.status.name == 'EM_ANDAMENTO' else 'danger') }}">
+                  {{ c.status.value }}
                 </span>
               </td>
               <td>
-                <span class="askly-badge askly-badge--{{ 'danger' if c.prioridade.name == 'ALTA' else ('warning' if c.prioridade.name == 'MEDIA' else 'neutral') }}">
-                  {{ c.prioridade_display }}
+                <span class="askly-badge askly-badge--{{ 'danger' if c.priority.name in ['Alta', 'Crítica'] else ('warning' if c.priority.name == 'Média' else 'neutral') }}">
+                  {{ c.priority.name }}
                 </span>
               </td>
-              <td>{{ c.categoria_nome or '-' }}</td>
-              <td>{{ c.criado_em.strftime('%d/%m/%Y %H:%M') }}</td>
+              <td>{{ c.category.name if c.category else '-' }}</td>
+              <td>
+                {% if is_overdue(c) %}
+                  <span class="askly-badge askly-badge--danger">Atrasado</span>
+                {% else %}
+                  <span class="askly-badge askly-badge--neutral">No prazo</span>
+                {% endif %}
+              </td>
+              <td>{{ c.reported_date.strftime('%d/%m/%Y') }}</td>
             </tr>
           {% else %}
             <tr>
-              <td colspan="5" class="askly-text-center" style="padding: var(--ask-space-8); color: var(--ask-gray-500);">
+              <td colspan="9" class="askly-text-center" style="padding: var(--ask-space-8); color: var(--ask-gray-500);">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto var(--ask-space-4); opacity: 0.5; display: block;">
                   <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                   <line x1="3" y1="9" x2="21" y2="9"/>
                   <line x1="9" y1="21" x2="9" y2="9"/>
                 </svg>
-                Nenhum chamado encontrado.
+                Nenhum chamado encontrado com os filtros selecionados.
               </td>
             </tr>
           {% endfor %}
@@ -60,5 +169,35 @@
       </table>
     </div>
   </div>
-{% endblock %}
 
+  {% if chamados.pages > 1 %}
+    {% set range_start = (chamados.page - 1) * chamados.per_page + 1 %}
+    {% set range_end = [chamados.page * chamados.per_page, chamados.total] | min %}
+    <nav class="askly-pagination" aria-label="Paginação de chamados">
+      <span class="askly-pagination__info">
+        Mostrando {{ range_start }}–{{ range_end }} de {{ chamados.total }} chamado(s)
+      </span>
+      <div class="askly-pagination__nav">
+        {% if chamados.has_prev %}
+          <a class="askly-btn askly-btn--secondary" href="{{ url_for('web_tickets.listar', page=chamados.prev_num, **filter_page_args) }}">Anterior</a>
+        {% endif %}
+        <div class="askly-pagination__pages">
+          {% for p in chamados.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=1) %}
+            {% if p %}
+              {% if p == chamados.page %}
+                <span class="askly-pagination__page askly-pagination__page--active" aria-current="page">{{ p }}</span>
+              {% else %}
+                <a class="askly-pagination__page" href="{{ url_for('web_tickets.listar', page=p, **filter_page_args) }}">{{ p }}</a>
+              {% endif %}
+            {% else %}
+              <span class="askly-pagination__page" style="border: none; background: transparent; pointer-events: none;">…</span>
+            {% endif %}
+          {% endfor %}
+        </div>
+        {% if chamados.has_next %}
+          <a class="askly-btn askly-btn--secondary" href="{{ url_for('web_tickets.listar', page=chamados.next_num, **filter_page_args) }}">Próxima</a>
+        {% endif %}
+      </div>
+    </nav>
+  {% endif %}
+{% endblock %}

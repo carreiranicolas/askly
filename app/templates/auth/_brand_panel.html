@@ -1,0 +1,27 @@
+{# Painel de marca (lado direito) — logo + tagline #}
+<aside class="askly-auth-split__brand" aria-label="Askly">
+  <div class="askly-auth-brand-deco" aria-hidden="true">
+    <span class="askly-auth-brand-shape askly-auth-brand-shape--1"></span>
+    <span class="askly-auth-brand-shape askly-auth-brand-shape--2"></span>
+    <span class="askly-auth-brand-shape askly-auth-brand-shape--3"></span>
+    <span class="askly-auth-brand-line askly-auth-brand-line--1"></span>
+    <span class="askly-auth-brand-line askly-auth-brand-line--2"></span>
+    <span class="askly-auth-brand-line askly-auth-brand-line--3"></span>
+  </div>
+
+  <div class="askly-auth-brand-content">
+    <img
+      class="askly-auth-brand-logo"
+      src="{{ url_for('static', filename='img/askly-logo.png') }}"
+      alt="Askly"
+      width="320"
+      height="auto"
+    />
+    <p class="askly-auth-brand-tagline">
+      {{ brand_tagline | default('Sua plataforma inteligente de suporte interno.') }}
+    </p>
+    {% if brand_footer %}
+      <p class="askly-auth-brand-footer">{{ brand_footer }}</p>
+    {% endif %}
+  </div>
+</aside>

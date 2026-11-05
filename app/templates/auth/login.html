@@ -2,155 +2,94 @@
 {% block title %}Login | Askly{% endblock %}
 
 {% block content %}
-  <main class="askly-auth-wrap">
-    <section class="askly-auth-card">
-      <div class="askly-auth-grid">
+  <main class="askly-auth-split">
+    <!-- Formulário (esquerda) -->
+    <div class="askly-auth-split__form">
+      <div class="askly-auth-panel askly-stagger">
+        {% include "auth/_flash.html" %}
 
-        <!-- ─── Brand Panel (Left) ──────────────────────── -->
-        <aside class="askly-auth-brand">
-          <!-- Decorative particles -->
-          <div class="askly-brand-particles" aria-hidden="true">
-            <span class="askly-brand-dot"></span>
-            <span class="askly-brand-dot"></span>
-            <span class="askly-brand-dot"></span>
-            <span class="askly-brand-dot"></span>
-            <span class="askly-brand-dot"></span>
-            <span class="askly-brand-dot"></span>
-            <span class="askly-brand-dot"></span>
-            <span class="askly-brand-dot"></span>
-            <span class="askly-brand-diamond"></span>
-            <span class="askly-brand-diamond"></span>
-            <span class="askly-brand-diamond"></span>
+        <h1 class="askly-auth-heading">Bem-vindo de volta</h1>
+        <p class="askly-auth-lead">Entre com seu e-mail e senha para continuar.</p>
+
+        <form method="post" id="login-form" class="askly-auth-panel__form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+          <div class="askly-field">
+            <label class="askly-label" for="login-email">E-mail</label>
+            <div class="askly-input-wrap">
+              <svg class="askly-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="4" width="20" height="16" rx="3"/>
+                <polyline points="22,7 12,13 2,7"/>
+              </svg>
+              <input
+                id="login-email"
+                class="askly-input"
+                type="email"
+                name="email"
+                placeholder="seu@email.com"
+                autocomplete="email"
+                required
+              />
+            </div>
           </div>
 
-          <div class="askly-logo-frame">
-            <img
-              src="{{ url_for('static', filename='img/askly.svg') }}"
-              alt="Askly Logo"
-              class="askly-logo"
-              width="160"
-              height="160"
-            />
-          </div>
-
-          <h2 class="askly-brand-name">
-            <span class="askly-brand-accent">Askly</span>
-          </h2>
-
-          <p class="askly-auth-tagline">
-            Sua plataforma inteligente de suporte interno.
-          </p>
-        </aside>
-
-        <!-- ─── Form Panel (Right) ──────────────────────── -->
-        <div class="askly-auth-form">
-          <div class="askly-stagger">
-
-            <!-- Flash messages -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
-              {% if messages %}
-                <div class="askly-mb-5">
-                  {% for category, message in messages %}
-                    <div class="askly-notification askly-notification--{{ 'danger' if category in ['danger','error'] else category }}">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="12" y1="8" x2="12" y2="12"/>
-                        <line x1="12" y1="16" x2="12.01" y2="16"/>
-                      </svg>
-                      {{ message }}
-                    </div>
-                  {% endfor %}
-                </div>
-              {% endif %}
-            {% endwith %}
-
-            <h1 class="askly-title">Bem-vindo</h1>
-            <p class="askly-subtitle">Acesse sua conta para continuar.</p>
-
-            <form method="post" id="login-form">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-
-              <!-- Email -->
-              <div class="askly-field">
-                <label class="askly-label" for="login-email">Email</label>
-                <div class="askly-input-wrap">
-                  <svg class="askly-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="2" y="4" width="20" height="16" rx="3"/>
-                    <polyline points="22,7 12,13 2,7"/>
-                  </svg>
-                  <input
-                    id="login-email"
-                    class="askly-input"
-                    type="email"
-                    name="email"
-                    placeholder="seu@email.com"
-                    autocomplete="email"
-                    required
-                  />
-                </div>
-              </div>
-
-              <!-- Senha -->
-              <div class="askly-field">
-                <label class="askly-label" for="login-senha">Senha</label>
-                <div class="askly-input-wrap">
-                  <svg class="askly-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                  </svg>
-                  <input
-                    id="login-senha"
-                    class="askly-input"
-                    type="password"
-                    name="senha"
-                    placeholder="••••••••"
-                    autocomplete="current-password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    class="askly-input-toggle"
-                    aria-label="Mostrar/ocultar senha"
-                    onclick="togglePassword(this)"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                      <circle cx="12" cy="12" r="3"/>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Lembrar-me -->
-              <div class="askly-checkbox-wrap">
-                <input id="login-lembrar" class="askly-checkbox" type="checkbox" name="lembrar" />
-                <label class="askly-checkbox-label" for="login-lembrar">Lembrar-me</label>
-              </div>
-
-              <!-- Submit -->
-              <button class="askly-btn askly-btn--primary" type="submit">
-                Entrar
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="5" y1="12" x2="19" y2="12"/>
-                  <polyline points="12,5 19,12 12,19"/>
+          <div class="askly-field">
+            <label class="askly-label" for="login-senha">Senha</label>
+            <div class="askly-input-wrap">
+              <svg class="askly-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              <input
+                id="login-senha"
+                class="askly-input"
+                type="password"
+                name="password"
+                placeholder="••••••••"
+                autocomplete="current-password"
+                required
+              />
+              <button
+                type="button"
+                class="askly-input-toggle"
+                aria-label="Mostrar/ocultar senha"
+                onclick="togglePassword(this)"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
                 </svg>
               </button>
-
-              <p class="askly-help askly-mt-5 askly-text-center">
-                Ainda não tem conta?
-                <a href="{{ url_for('web_auth.cadastro') }}">Criar cadastro</a>
-              </p>
-            </form>
-
-            <p class="askly-help askly-version">
-              Versão <span class="askly-kbd">v{{ ASKLY_VERSION }}</span>
-            </p>
-
+            </div>
           </div>
-        </div>
 
+          <label class="askly-checkbox-wrap" for="login-lembrar">
+            <input
+              id="login-lembrar"
+              class="askly-checkbox"
+              type="checkbox"
+              name="remember_me"
+            />
+            <span class="askly-checkbox-box" aria-hidden="true"></span>
+            <span class="askly-checkbox-label">Lembrar-me</span>
+          </label>
+
+          <button class="askly-btn askly-btn--primary askly-btn--auth" type="submit">
+            Entrar
+          </button>
+
+          <p class="askly-auth-panel__footer">
+            Ainda não tem conta?
+            <a href="{{ url_for('web_auth.cadastro') }}">Criar cadastro</a>
+          </p>
+        </form>
+
+        <p class="askly-auth-version">Versão <span class="askly-kbd">v{{ ASKLY_VERSION }}</span></p>
       </div>
-    </section>
+    </div>
+
+    <!-- Logo (direita) -->
+    {% include "auth/_brand_panel.html" %}
   </main>
 {% endblock %}
 
@@ -160,8 +99,6 @@
     const input = btn.previousElementSibling;
     const isPassword = input.type === 'password';
     input.type = isPassword ? 'text' : 'password';
-
-    // Swap icon
     btn.innerHTML = isPassword
       ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
       : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';

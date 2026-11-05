@@ -196,221 +196,378 @@ button, input, select, textarea {
   }
 }
 
-/* ── Auth Layout ───────────────────────────────────────────── */
-.askly-auth-wrap {
+/* ── Auth: split screen (forme à esquerda, logo à direita) ───── */
+.askly-page--auth {
   min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: var(--ask-space-10) var(--ask-space-5);
-  position: relative;
-  z-index: var(--ask-z-above);
+  background: var(--ask-navy-900);
 }
 
-.askly-auth-card {
-  width: min(1040px, 100%);
-  border-radius: var(--ask-radius-2xl);
-  overflow: hidden;
-  box-shadow: var(--ask-shadow-xl);
-  border: 1px solid var(--ask-glass-border);
-  background: var(--ask-glass-bg);
-  backdrop-filter: blur(var(--ask-glass-blur));
-  -webkit-backdrop-filter: blur(var(--ask-glass-blur));
-  animation: askly-card-enter 0.6s var(--ask-ease-out) both;
-  animation-delay: 0.1s;
+.askly-auth-split {
+  display: grid;
+  min-height: 100vh;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto 1fr;
+  --ask-split-pct: 26;
+}
+
+@media (min-width: 900px) {
+  .askly-auth-split {
+    /* Painel azul ≈74% — coluna do forme estreita */
+    grid-template-columns: minmax(260px, calc(var(--ask-split-pct) * 1%)) 1fr;
+    grid-template-rows: 1fr;
+  }
+}
+
+/* Lado esquerdo — fundo claro + card branco (estilo Gnexum) */
+.askly-auth-split__form {
+  order: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ask-space-8) var(--ask-space-6);
+  background:
+    radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.9) 0%, transparent 45%),
+    radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.5) 0%, transparent 40%),
+    linear-gradient(155deg, #e4e9f0 0%, #d5dde8 45%, #c8d2e0 100%);
+  position: relative;
+  z-index: 2;
+}
+
+@media (min-width: 900px) {
+  .askly-auth-split__form {
+    order: 1;
+    padding: var(--ask-space-10) var(--ask-space-6);
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* Linha de separação entre o fundo claro e o painel azul */
+  .askly-auth-split__form::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      rgba(15, 40, 71, 0.12) 15%,
+      rgba(15, 40, 71, 0.22) 50%,
+      rgba(15, 40, 71, 0.12) 85%,
+      transparent 100%
+    );
+    pointer-events: none;
+  }
+}
+
+.askly-auth-panel {
+  width: min(420px, 100%);
+  background: #ffffff;
+  border-radius: var(--ask-radius-xl);
+  box-shadow:
+    0 4px 6px rgba(15, 23, 42, 0.04),
+    0 24px 48px rgba(15, 23, 42, 0.12);
+  padding: var(--ask-space-10) var(--ask-space-8);
+  animation: askly-card-enter 0.55s var(--ask-ease-out) both;
+}
+
+.askly-auth-panel--wide {
+  width: min(460px, 100%);
+}
+
+@media (min-width: 900px) {
+  .askly-auth-panel {
+    --panel-shift: calc(var(--ask-split-pct) * 0.5 * 1vw);
+    margin-right: 0;
+    position: relative;
+    z-index: 3;
+    /* Centro do card alinhado à linha de separação (26% da viewport) */
+    transform: translateX(var(--panel-shift));
+    animation-name: askly-card-enter-split;
+  }
+
+  .askly-auth-panel--wide {
+    /* Cadastro: mesmo eixo central na divisória */
+    --panel-shift: calc(var(--ask-split-pct) * 0.5 * 1vw);
+  }
 }
 
 @keyframes askly-card-enter {
   from {
     opacity: 0;
-    transform: translateY(20px) scale(0.98);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
-.askly-auth-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-}
-
-@media (min-width: 768px) {
-  .askly-auth-grid {
-    grid-template-columns: 1.1fr 0.9fr;
+@keyframes askly-card-enter-split {
+  from {
+    opacity: 0;
+    transform: translateX(var(--panel-shift, 0)) translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(var(--panel-shift, 0)) translateY(0);
   }
 }
 
-/* ── Auth: Brand Panel (Left) ──────────────────────────────── */
-.askly-auth-brand {
+.askly-auth-heading {
+  font-size: var(--ask-text-xl);
+  font-weight: 800;
+  color: var(--ask-gray-900);
+  letter-spacing: var(--ask-tracking-tight);
+  margin-bottom: var(--ask-space-2);
+}
+
+.askly-auth-lead {
+  font-size: var(--ask-text-sm);
+  color: var(--ask-gray-500);
+  margin-bottom: var(--ask-space-8);
+  line-height: var(--ask-leading-normal);
+}
+
+.askly-auth-panel__form {
+  display: flex;
+  flex-direction: column;
+}
+
+.askly-auth-panel__footer {
+  margin-top: var(--ask-space-6);
+  text-align: center;
+  font-size: var(--ask-text-sm);
+  color: var(--ask-gray-500);
+}
+
+.askly-auth-panel__footer a {
+  color: var(--ask-teal-600);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.askly-auth-panel__footer a:hover {
+  color: var(--ask-teal-500);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.askly-auth-version {
+  margin-top: var(--ask-space-6);
+  text-align: center;
+  font-size: var(--ask-text-xs);
+  color: var(--ask-gray-400);
+}
+
+/* Botão sólido no painel claro (referência corporativa) */
+.askly-btn--auth {
+  width: 100%;
+  margin-top: var(--ask-space-2);
+  background: var(--ask-navy-700);
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 40, 71, 0.25);
+  letter-spacing: 0.02em;
+}
+
+.askly-btn--auth:hover {
+  background: var(--ask-navy-600);
+  box-shadow: 0 12px 28px rgba(15, 40, 71, 0.32);
+  transform: translateY(-1px);
+}
+
+.askly-btn--auth::after {
+  display: none;
+}
+
+/* Lado direito — marca + logo */
+.askly-auth-split__brand {
+  order: 2;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 280px;
   padding: var(--ask-space-10) var(--ask-space-8);
-  background: linear-gradient(160deg, #0c1e3a 0%, #081428 40%, #060e1a 100%);
+  background: linear-gradient(165deg, #0f2847 0%, #0a1628 50%, #060e1a 100%);
+  overflow: hidden;
+}
+
+@media (min-width: 900px) {
+  .askly-auth-split__brand {
+    order: 2;
+    min-height: 100vh;
+    padding: var(--ask-space-12);
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
+  }
+}
+
+.askly-auth-brand-deco {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Retângulos arredondados translúcidos (efeito Gnexum) */
+.askly-auth-brand-shape {
+  position: absolute;
+  border-radius: var(--ask-radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.askly-auth-brand-shape--1 {
+  width: 140px;
+  height: 90px;
+  top: 12%;
+  left: 8%;
+  transform: rotate(-8deg);
+}
+
+.askly-auth-brand-shape--2 {
+  width: 200px;
+  height: 120px;
+  bottom: 18%;
+  right: 5%;
+  transform: rotate(6deg);
+  background: rgba(13, 148, 136, 0.06);
+  border-color: rgba(94, 234, 212, 0.12);
+}
+
+.askly-auth-brand-shape--3 {
+  width: 100px;
+  height: 100px;
+  top: 45%;
+  right: 25%;
+  border-radius: var(--ask-radius-full);
+  opacity: 0.6;
+}
+
+.askly-auth-brand-line {
+  position: absolute;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  animation: askly-line-sweep 6s ease-in-out infinite;
+}
+
+.askly-auth-brand-line--1 {
+  width: 120px;
+  top: 35%;
+  left: 15%;
+  animation-delay: 0s;
+}
+
+.askly-auth-brand-line--2 {
+  width: 180px;
+  top: 55%;
+  right: 10%;
+  animation-delay: 2s;
+}
+
+.askly-auth-brand-line--3 {
+  width: 90px;
+  bottom: 30%;
+  left: 40%;
+  animation-delay: 4s;
+}
+
+@keyframes askly-line-sweep {
+  0%, 100% { opacity: 0.2; transform: translateX(0); }
+  50% { opacity: 0.7; transform: translateX(12px); }
+}
+
+.askly-auth-brand-content {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   text-align: center;
-  position: relative;
-  overflow: hidden;
-  border-bottom: 1px solid rgba(94, 234, 212, 0.08);
-  min-height: 380px;
+  max-width: 380px;
 }
 
-@media (min-width: 768px) {
-  .askly-auth-brand {
-    border-bottom: none;
-    border-right: 1px solid rgba(94, 234, 212, 0.08);
-    padding: var(--ask-space-16) var(--ask-space-10);
-    min-height: auto;
-  }
-}
-
-/* Atmospheric inner glow on brand panel */
-.askly-auth-brand::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse 500px 400px at 50% 30%, rgba(13, 148, 136, 0.18), transparent 70%),
-    radial-gradient(ellipse 400px 500px at 30% 70%, rgba(14, 165, 233, 0.12), transparent 65%),
-    radial-gradient(ellipse 300px 300px at 80% 60%, rgba(16, 185, 129, 0.10), transparent 60%);
-  pointer-events: none;
-  animation: askly-glow-pulse 8s ease-in-out infinite;
-}
-
-@keyframes askly-glow-pulse {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.7; }
-}
-
-.askly-brand-particles {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.askly-brand-dot {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(94, 234, 212, 0.55);
-  box-shadow: 0 0 8px rgba(94, 234, 212, 0.40);
-  animation: askly-twinkle 4s ease-in-out infinite;
-}
-
-.askly-brand-dot:nth-child(1) { width: 5px; height: 5px; top: 12%; left: 18%; animation-delay: 0s; }
-.askly-brand-dot:nth-child(2) { width: 7px; height: 7px; top: 68%; left: 78%; animation-delay: 1.5s; background: rgba(14, 165, 233, 0.50); box-shadow: 0 0 10px rgba(14, 165, 233, 0.35); }
-.askly-brand-dot:nth-child(3) { width: 4px; height: 4px; top: 38%; left: 88%; animation-delay: 3s; }
-.askly-brand-dot:nth-child(4) { width: 6px; height: 6px; top: 82%; left: 25%; animation-delay: 0.8s; background: rgba(16, 185, 129, 0.45); box-shadow: 0 0 10px rgba(16, 185, 129, 0.30); }
-.askly-brand-dot:nth-child(5) { width: 5px; height: 5px; top: 22%; left: 72%; animation-delay: 2.2s; }
-.askly-brand-dot:nth-child(6) { width: 3px; height: 3px; top: 55%; left: 12%; animation-delay: 1.8s; background: rgba(56, 189, 248, 0.40); }
-.askly-brand-dot:nth-child(7) { width: 4px; height: 4px; top: 45%; left: 50%; animation-delay: 3.5s; }
-.askly-brand-dot:nth-child(8) { width: 6px; height: 6px; top: 90%; left: 65%; animation-delay: 0.5s; background: rgba(14, 165, 233, 0.40); box-shadow: 0 0 8px rgba(14, 165, 233, 0.25); }
-
-/* Diamond geometric shapes */
-.askly-brand-diamond {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  border: 1.5px solid rgba(94, 234, 212, 0.25);
-  transform: rotate(45deg);
-  animation: askly-twinkle 5s ease-in-out infinite;
-}
-
-.askly-brand-diamond:nth-child(9)  { top: 28%; left: 10%; animation-delay: 1s; width: 12px; height: 12px; }
-.askly-brand-diamond:nth-child(10) { top: 62%; left: 85%; animation-delay: 2.5s; border-color: rgba(14, 165, 233, 0.22); }
-.askly-brand-diamond:nth-child(11) { top: 85%; left: 48%; animation-delay: 4s; width: 8px; height: 8px; border-color: rgba(16, 185, 129, 0.20); }
-
-@keyframes askly-twinkle {
-  0%, 100% { opacity: 0.25; transform: scale(1) rotate(var(--_rot, 0deg)); }
-  50%      { opacity: 1; transform: scale(1.5) rotate(var(--_rot, 0deg)); }
-}
-
-.askly-brand-diamond { --_rot: 45deg; }
-
-.askly-logo-frame {
-  width: min(160px, 60%);
-  margin-bottom: var(--ask-space-8);
-  position: relative;
-  z-index: 1;
-  animation: askly-logo-float 6s ease-in-out infinite;
-}
-
-/* Glowing ring behind the logo */
-.askly-logo-frame::before {
-  content: '';
-  position: absolute;
-  inset: -15px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(13, 148, 136, 0.20), transparent 70%);
-  filter: blur(15px);
-  animation: askly-ring-pulse 4s ease-in-out infinite;
-}
-
-@keyframes askly-ring-pulse {
-  0%, 100% { opacity: 0.6; transform: scale(1); }
-  50%      { opacity: 1; transform: scale(1.08); }
-}
-
-@keyframes askly-logo-float {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-10px); }
-}
-
-.askly-logo {
-  width: 100%;
+.askly-auth-brand-logo {
+  width: min(300px, 75vw);
   height: auto;
   display: block;
-  filter: drop-shadow(0 8px 25px rgba(13, 148, 136, 0.40));
-  position: relative;
-  z-index: 1;
+  margin-bottom: var(--ask-space-6);
+  filter: drop-shadow(0 12px 40px rgba(0, 0, 0, 0.35));
 }
 
-.askly-brand-name {
-  font-size: var(--ask-text-3xl);
-  font-weight: 800;
-  letter-spacing: var(--ask-tracking-tight);
-  color: var(--ask-text-primary);
-  position: relative;
-  z-index: 1;
-  margin-bottom: var(--ask-space-3);
-}
-
-.askly-brand-accent {
-  background: linear-gradient(135deg, var(--ask-teal-300), var(--ask-sky-400));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 20px rgba(94, 234, 212, 0.30));
-}
-
-.askly-auth-tagline {
-  color: rgba(148, 163, 184, 0.85);
+.askly-auth-brand-tagline {
+  color: rgba(203, 213, 225, 0.88);
   font-size: var(--ask-text-base);
   line-height: var(--ask-leading-relaxed);
-  max-width: 320px;
-  position: relative;
-  z-index: 1;
 }
 
-/* ── Auth: Form Panel (Right) ──────────────────────────────── */
-.askly-auth-form {
-  padding: var(--ask-space-10) var(--ask-space-8);
-  background: rgba(255, 255, 255, 0.97);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+.askly-auth-brand-footer {
+  margin-top: var(--ask-space-6);
+  font-size: var(--ask-text-sm);
+  color: rgba(148, 163, 184, 0.9);
 }
 
-@media (min-width: 768px) {
-  .askly-auth-form {
-    padding: var(--ask-space-12) var(--ask-space-10);
-  }
+.askly-auth-brand-footer a {
+  color: var(--ask-teal-300);
+  font-weight: 600;
+  text-decoration: none;
 }
 
-.askly-auth-form form {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+.askly-auth-brand-footer a:hover {
+  text-decoration: underline;
+}
+
+/* Painel claro: inputs e labels legíveis */
+.askly-auth-panel .askly-label {
+  color: var(--ask-gray-700);
+}
+
+.askly-auth-panel .askly-input {
+  background: #ffffff;
+  border-color: var(--ask-gray-200);
+  color: var(--ask-gray-900);
+}
+
+.askly-auth-panel .askly-checkbox-label {
+  color: var(--ask-gray-600);
+}
+
+/* Tema escuro no split auth */
+:root[data-theme="dark"] .askly-auth-split__form {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(30, 45, 70, 0.5) 0%, transparent 50%),
+    linear-gradient(155deg, #0b1220 0%, #080e1a 100%);
+}
+
+:root[data-theme="dark"] .askly-auth-panel {
+  background: var(--ask-surface);
+  border: 1px solid var(--ask-border);
+  box-shadow: var(--ask-shadow-lg);
+}
+
+:root[data-theme="dark"] .askly-auth-heading {
+  color: var(--ask-text-primary);
+}
+
+:root[data-theme="dark"] .askly-auth-lead,
+:root[data-theme="dark"] .askly-auth-panel__footer {
+  color: var(--ask-text-secondary);
+}
+
+:root[data-theme="dark"] .askly-auth-panel .askly-input {
+  background: var(--ask-input-bg);
+  border-color: var(--ask-input-border);
+  color: var(--ask-text-primary);
+}
+
+:root[data-theme="dark"] .askly-btn--auth {
+  background: var(--ask-teal-600);
+}
+
+:root[data-theme="dark"] .askly-btn--auth:hover {
+  background: var(--ask-teal-500);
 }
 
 /* ── Typography Classes ────────────────────────────────────── */
@@ -464,9 +621,9 @@ button, input, select, textarea {
   width: 100%;
   height: 48px;
   padding: 0 var(--ask-space-4) 0 var(--ask-space-12);
-  border: 1.5px solid var(--ask-gray-200);
+  border: 1.5px solid var(--ask-input-border);
   border-radius: var(--ask-radius-md);
-  background: var(--ask-white);
+  background: var(--ask-input-bg);
   color: var(--ask-text-dark);
   font-size: var(--ask-text-base);
   transition:
@@ -494,9 +651,63 @@ button, input, select, textarea {
   color: var(--ask-teal-500);
 }
 
+.askly-input-wrap:focus-within .askly-input-icon {
+  color: var(--ask-teal-500);
+}
+
+.askly-input:disabled {
+  background: var(--ask-surface-sunken);
+  color: var(--ask-gray-400);
+  cursor: not-allowed;
+}
+
+.askly-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.askly-btn:disabled:hover {
+  transform: none;
+  filter: none;
+}
+
 /* Input without icon */
 .askly-input--no-icon {
   padding-left: var(--ask-space-4);
+}
+
+.askly-input-wrap:not(:has(.askly-input-icon)) .askly-input {
+  padding-left: var(--ask-space-4);
+}
+
+/* Selects: remove a aparência nativa e usa uma seta (chevron) custom,
+   coerente com os demais campos em tema claro e escuro. */
+select.askly-input {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: var(--ask-space-10);
+  cursor: pointer;
+  text-overflow: ellipsis;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--ask-space-4) center;
+  background-size: 16px 16px;
+}
+
+select.askly-input::-ms-expand {
+  display: none;
+}
+
+:root[data-theme="dark"] select.askly-input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a9bb5' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
+
+/* Opções legíveis nos dois temas (alguns SOs herdam cor do fundo da página). */
+select.askly-input option {
+  color: var(--ask-text-dark);
+  background: var(--ask-input-bg);
 }
 
 /* Toggle password visibility */
@@ -524,25 +735,99 @@ button, input, select, textarea {
 
 /* ── Checkbox ──────────────────────────────────────────────── */
 .askly-checkbox-wrap {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: var(--ask-space-2);
+  gap: var(--ask-space-3);
   margin-bottom: var(--ask-space-6);
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .askly-checkbox {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--ask-teal-500);
-  border-radius: 4px;
-  cursor: pointer;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.askly-checkbox-box {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid var(--ask-input-border);
+  border-radius: 6px;
+  background: var(--ask-input-bg);
+  display: grid;
+  place-items: center;
+  transition:
+    border-color var(--ask-duration-fast) var(--ask-ease-out),
+    background-color var(--ask-duration-fast) var(--ask-ease-out),
+    box-shadow var(--ask-duration-normal) var(--ask-ease-out),
+    transform var(--ask-duration-fast) var(--ask-ease-out);
+}
+
+.askly-checkbox-box::after {
+  content: "";
+  width: 5px;
+  height: 9px;
+  margin-top: -2px;
+  border: solid var(--ask-on-brand);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0);
+  opacity: 0;
+  transition:
+    transform var(--ask-duration-fast) var(--ask-ease-spring),
+    opacity var(--ask-duration-fast);
+}
+
+.askly-checkbox-wrap:hover .askly-checkbox-box {
+  border-color: var(--ask-gray-300);
+}
+
+.askly-checkbox:checked + .askly-checkbox-box {
+  background: var(--ask-teal-500);
+  border-color: var(--ask-teal-500);
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.28);
+}
+
+.askly-checkbox:checked + .askly-checkbox-box::after {
+  transform: rotate(45deg) scale(1);
+  opacity: 1;
+}
+
+.askly-checkbox:focus-visible + .askly-checkbox-box {
+  outline: none;
+  border-color: var(--ask-teal-500);
+  box-shadow:
+    0 0 0 4px rgba(13, 148, 136, 0.12),
+    var(--ask-shadow-inner-glow);
+}
+
+.askly-checkbox:checked:focus-visible + .askly-checkbox-box {
+  box-shadow:
+    0 0 0 4px rgba(13, 148, 136, 0.12),
+    0 2px 8px rgba(13, 148, 136, 0.28);
+}
+
+.askly-checkbox:active + .askly-checkbox-box {
+  transform: scale(0.92);
 }
 
 .askly-checkbox-label {
   font-size: var(--ask-text-sm);
+  font-weight: 500;
   color: var(--ask-gray-600);
-  cursor: pointer;
-  user-select: none;
+  line-height: 1.25;
+}
+
+.askly-checkbox-wrap:hover .askly-checkbox-label {
+  color: var(--ask-gray-700);
 }
 
 /* ── Buttons ───────────────────────────────────────────────── */
@@ -571,17 +856,28 @@ button, input, select, textarea {
   transform: scale(0.98);
 }
 
+/* Links as buttons: do not inherit global anchor colors/underline */
+a.askly-btn,
+a.askly-btn:hover,
+a.askly-btn:focus,
+a.askly-btn:focus-visible,
+a.askly-btn:active {
+  text-decoration: none;
+}
+
 /* Primary action button */
 .askly-btn--primary {
   width: 100%;
   background: var(--ask-gradient-brand);
-  color: var(--ask-white);
+  color: #ffffff;
   box-shadow: 0 8px 24px rgba(13, 148, 136, 0.25);
   letter-spacing: 0.02em;
 }
 
-.askly-btn--primary:hover {
+.askly-btn--primary:hover,
+a.askly-btn--primary:hover {
   background: var(--ask-gradient-brand-hover);
+  color: #ffffff;
   box-shadow: 0 12px 32px rgba(13, 148, 136, 0.35);
   transform: translateY(-1px);
 }
@@ -592,12 +888,13 @@ button, input, select, textarea {
     0 8px 24px rgba(13, 148, 136, 0.25);
 }
 
-/* Shimmer effect on button */
+/* Shimmer effect on button (behind label/icon, not over text) */
 .askly-btn--primary::after {
   content: '';
   position: absolute;
   top: 0;
   left: -100%;
+  z-index: 0;
   width: 100%;
   height: 100%;
   background: linear-gradient(
@@ -607,6 +904,12 @@ button, input, select, textarea {
     transparent
   );
   transition: left 0.5s var(--ask-ease-out);
+  pointer-events: none;
+}
+
+.askly-btn--primary svg {
+  position: relative;
+  z-index: 1;
 }
 
 .askly-btn--primary:hover::after {
@@ -620,9 +923,46 @@ button, input, select, textarea {
   border: 1.5px solid var(--ask-gray-200);
 }
 
-.askly-btn--ghost:hover {
+.askly-btn--ghost:hover,
+a.askly-btn--ghost:hover {
   border-color: var(--ask-teal-500);
   background: rgba(13, 148, 136, 0.05);
+  color: var(--ask-teal-500);
+}
+
+/* Secondary (neutral) button */
+.askly-btn--secondary {
+  background: var(--ask-surface);
+  color: var(--ask-gray-700);
+  border: 1.5px solid var(--ask-border);
+}
+
+.askly-btn--secondary:hover,
+a.askly-btn--secondary:hover {
+  border-color: var(--ask-gray-300);
+  background: var(--ask-surface-sunken);
+  color: var(--ask-gray-700);
+}
+
+/* Danger / decline button */
+.askly-btn--danger {
+  background: var(--ask-danger);
+  color: var(--ask-on-brand);
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.25);
+}
+
+.askly-btn--danger:hover,
+a.askly-btn--danger:hover {
+  filter: brightness(1.05);
+  color: #ffffff;
+  box-shadow: 0 12px 32px rgba(239, 68, 68, 0.35);
+  transform: translateY(-1px);
+}
+
+/* Large action buttons (ex.: aprovar/recusar a solução) */
+.askly-btn--lg {
+  height: 56px;
+  font-size: var(--ask-text-lg);
 }
 
 /* ── Notifications / Flash Messages ────────────────────────── */
@@ -764,7 +1104,7 @@ button, input, select, textarea {
 .askly-app-layout {
   display: flex;
   min-height: 100vh;
-  background: var(--ask-gray-50);
+  background: var(--ask-surface-app);
 }
 
 /* ── Sidebar ───────────────────────────────────────────────── */
@@ -783,7 +1123,7 @@ button, input, select, textarea {
 }
 
 .askly-sidebar-header {
-  padding: var(--ask-space-6) var(--ask-space-6);
+  padding: var(--ask-space-6) var(--ask-space-5);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -792,17 +1132,17 @@ button, input, select, textarea {
   align-items: center;
   gap: var(--ask-space-3);
   text-decoration: none;
-  color: var(--ask-white);
+  color: #ffffff;
 }
 
 .askly-sidebar-brand:hover {
   text-decoration: none;
-  color: var(--ask-white);
+  color: #ffffff;
 }
 
 .askly-sidebar-logo {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   filter: drop-shadow(0 0 8px rgba(13, 148, 136, 0.4));
 }
 
@@ -810,125 +1150,269 @@ button, input, select, textarea {
   font-size: var(--ask-text-lg);
   font-weight: 800;
   letter-spacing: var(--ask-tracking-tight);
+  /* Sidebar é sempre escura (nos dois temas); texto fixo claro para o brand
+     não sumir no dark, onde --ask-white é remapeado para um tom escuro. */
+  color: #ffffff;
 }
 
 .askly-sidebar-nav {
   flex: 1;
-  padding: var(--ask-space-6) var(--ask-space-4);
+  padding: var(--ask-space-4) var(--ask-space-3);
   display: flex;
   flex-direction: column;
-  gap: var(--ask-space-2);
+  gap: 2px;
   overflow-y: auto;
+}
+
+/* Sidebar sempre escura: cores fixas (não usar --ask-white, que no dark
+   theme vira um tom escuro e o texto some no hover). */
+.askly-sidebar a:hover {
+  text-decoration: none;
 }
 
 .askly-nav-item {
   display: flex;
   align-items: center;
   gap: var(--ask-space-3);
-  padding: var(--ask-space-3) var(--ask-space-4);
-  border-radius: var(--ask-radius-md);
-  color: var(--ask-gray-300);
+  padding: var(--ask-space-2) var(--ask-space-3);
+  border-radius: var(--ask-radius-sm);
+  color: #8a9bb5;
+  font-size: var(--ask-text-sm);
   font-weight: 500;
   text-decoration: none;
-  transition: all var(--ask-duration-fast) var(--ask-ease-out);
+  border-left: 3px solid transparent;
+  transition:
+    background var(--ask-duration-fast) var(--ask-ease-out),
+    color var(--ask-duration-fast) var(--ask-ease-out),
+    border-color var(--ask-duration-fast) var(--ask-ease-out);
 }
 
 .askly-nav-item svg {
-  width: 20px;
-  height: 20px;
-  opacity: 0.7;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: #8a9bb5;
+  opacity: 0.85;
 }
 
-.askly-nav-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--ask-white);
+.askly-nav-item:hover,
+a.askly-nav-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f1f5fb;
   text-decoration: none;
 }
 
 .askly-nav-item:hover svg {
+  color: #f1f5fb;
   opacity: 1;
 }
 
-.askly-nav-item.is-active {
-  background: rgba(13, 148, 136, 0.15);
-  color: var(--ask-teal-300);
-  border-left: 3px solid var(--ask-teal-400);
+.askly-nav-item.is-active,
+a.askly-nav-item.is-active:hover {
+  background: rgba(13, 148, 136, 0.14);
+  color: #5eead4;
+  border-left-color: #2dd4bf;
+  font-weight: 600;
+  text-decoration: none;
 }
 
 .askly-nav-item.is-active svg {
-  color: var(--ask-teal-400);
+  color: #2dd4bf;
+  opacity: 1;
+}
+
+/* Hash glyph used for category ("Áreas") nav items */
+.askly-nav-hash {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--ask-text-sm);
+  font-weight: 700;
+  color: #8a9bb5;
+  opacity: 0.75;
+}
+
+.askly-nav-item:hover .askly-nav-hash {
+  color: #f1f5fb;
+  opacity: 1;
+}
+
+.askly-nav-item.is-active .askly-nav-hash,
+.askly-nav-item.is-active:hover .askly-nav-hash {
+  color: #2dd4bf;
   opacity: 1;
 }
 
 .askly-nav-divider {
-  font-size: var(--ask-text-xs);
+  font-size: 0.6875rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--ask-gray-500);
-  margin-top: var(--ask-space-6);
-  margin-bottom: var(--ask-space-2);
-  padding-left: var(--ask-space-4);
+  letter-spacing: 0.08em;
+  color: #6b7c95;
+  margin-top: var(--ask-space-5);
+  margin-bottom: var(--ask-space-1);
+  padding: 0 var(--ask-space-3);
 }
 
-.askly-sidebar-footer {
-  padding: var(--ask-space-4);
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(0, 0, 0, 0.2);
+.askly-sidebar-nav > .askly-nav-divider:first-child {
+  margin-top: 0;
 }
 
-.askly-user-info {
-  display: flex;
-  align-items: center;
-  gap: var(--ask-space-3);
-  padding: var(--ask-space-3);
-  margin-bottom: var(--ask-space-2);
-}
-
+/* Shared user identity bits (avatar + name + role) — used in the
+   header user menu. */
 .askly-user-avatar {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: var(--ask-gradient-brand);
-  color: var(--ask-white);
+  color: var(--ask-on-brand);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: var(--ask-text-sm);
+  flex-shrink: 0;
 }
 
 .askly-user-details {
   display: flex;
   flex-direction: column;
+  line-height: 1.25;
+  text-align: left;
+  min-width: 0;
 }
 
 .askly-user-name {
-  color: var(--ask-white);
+  color: var(--ask-gray-900);
   font-weight: 600;
   font-size: var(--ask-text-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .askly-user-role {
   font-size: var(--ask-text-xs);
-  color: var(--ask-gray-500);
-}
-
-.askly-nav-logout {
-  color: var(--ask-gray-400);
-  margin-top: auto;
-}
-
-.askly-nav-logout:hover {
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--ask-danger);
+  color: var(--ask-text-muted);
 }
 
 /* ── Main Content ──────────────────────────────────────────── */
 .askly-main {
   flex: 1;
+  min-width: 0;
   margin-left: 280px;
   display: flex;
   flex-direction: column;
+}
+
+/* ── Mobile Menu Toggle ────────────────────────────────────── */
+.askly-menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: var(--ask-radius-md);
+  background: var(--ask-surface-sunken);
+  color: var(--ask-gray-700);
+  cursor: pointer;
+  transition: background var(--ask-duration-fast) var(--ask-ease-out);
+}
+
+.askly-menu-toggle:hover {
+  background: var(--ask-gray-200);
+}
+
+.askly-menu-toggle svg {
+  width: 22px;
+  height: 22px;
+}
+
+.askly-sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: calc(var(--ask-z-above) - 1);
+  opacity: 0;
+  transition: opacity var(--ask-duration-normal) var(--ask-ease-out);
+}
+
+/* ── Mobile Responsive ─────────────────────────────────────── */
+@media (max-width: 768px) {
+  .askly-sidebar {
+    transform: translateX(-100%);
+    transition: transform var(--ask-duration-normal) var(--ask-ease-out);
+  }
+
+  .askly-sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  .askly-sidebar-overlay.is-visible {
+    display: block;
+    opacity: 1;
+  }
+
+  .askly-main {
+    margin-left: 0;
+  }
+
+  .askly-menu-toggle {
+    display: flex;
+  }
+
+  .askly-app-header {
+    padding: 0 var(--ask-space-4);
+    height: 64px;
+    gap: var(--ask-space-3);
+  }
+
+  .askly-app-title {
+    font-size: var(--ask-text-lg);
+  }
+
+  .askly-app-content {
+    padding: var(--ask-space-4);
+  }
+
+  .askly-flash-container {
+    padding: var(--ask-space-4) var(--ask-space-4) 0;
+  }
+
+  .askly-app-actions .askly-btn {
+    padding: 0 var(--ask-space-4);
+    font-size: var(--ask-text-sm);
+    height: 40px;
+  }
+
+  .askly-app-actions .askly-btn span {
+    display: none;
+  }
+
+  .askly-table th,
+  .askly-table td {
+    padding: var(--ask-space-3);
+    font-size: var(--ask-text-xs);
+  }
+
+  .askly-card {
+    border-radius: var(--ask-radius-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .askly-app-header-right {
+    gap: var(--ask-space-2);
+  }
+
+  .askly-app-actions {
+    display: none;
+  }
 }
 
 .askly-app-header {
@@ -937,8 +1421,8 @@ button, input, select, textarea {
   align-items: center;
   justify-content: space-between;
   padding: 0 var(--ask-space-8);
-  background: var(--ask-white);
-  border-bottom: 1px solid var(--ask-gray-200);
+  background: var(--ask-surface);
+  border-bottom: 1px solid var(--ask-border);
   position: sticky;
   top: 0;
   z-index: var(--ask-z-above);
@@ -951,10 +1435,188 @@ button, input, select, textarea {
   letter-spacing: var(--ask-tracking-tight);
 }
 
+.askly-app-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--ask-space-4);
+}
+
 .askly-app-actions {
   display: flex;
+  align-items: center;
   gap: var(--ask-space-3);
 }
+
+.askly-app-actions .askly-btn--primary {
+  width: auto;
+}
+
+/* ── Header User Menu (top-right dropdown) ─────────────────── */
+.askly-user-menu {
+  position: relative;
+}
+
+/* Hide the native disclosure triangle */
+.askly-user-menu > summary {
+  list-style: none;
+}
+.askly-user-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.askly-user-menu-trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--ask-space-3);
+  padding: var(--ask-space-1) var(--ask-space-3) var(--ask-space-1) var(--ask-space-1);
+  border-radius: var(--ask-radius-full);
+  border: 1px solid var(--ask-border);
+  background: var(--ask-surface);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background var(--ask-duration-fast) var(--ask-ease-out),
+    border-color var(--ask-duration-fast) var(--ask-ease-out),
+    box-shadow var(--ask-duration-fast) var(--ask-ease-out);
+}
+
+.askly-user-menu-trigger:hover {
+  border-color: var(--ask-gray-300);
+  background: var(--ask-surface-sunken);
+}
+
+.askly-user-menu-trigger:hover .askly-user-name {
+  color: var(--ask-gray-900);
+}
+
+.askly-user-menu-trigger:hover .askly-user-role {
+  color: var(--ask-text-muted);
+}
+
+.askly-user-menu-trigger:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ask-accent-glow);
+}
+
+.askly-user-menu-caret {
+  width: 16px;
+  height: 16px;
+  color: var(--ask-text-muted);
+  transition: transform var(--ask-duration-fast) var(--ask-ease-out);
+}
+
+.askly-user-menu[open] .askly-user-menu-caret {
+  transform: rotate(180deg);
+}
+
+/* Hide name/role on small headers, keep avatar */
+@media (max-width: 640px) {
+  .askly-user-menu-trigger .askly-user-details {
+    display: none;
+  }
+  .askly-user-menu-trigger {
+    padding: var(--ask-space-1);
+  }
+}
+
+.askly-user-menu-panel {
+  position: absolute;
+  top: calc(100% + var(--ask-space-2));
+  right: 0;
+  min-width: 220px;
+  padding: var(--ask-space-2);
+  background: var(--ask-surface);
+  border: 1px solid var(--ask-border);
+  border-radius: var(--ask-radius-md);
+  box-shadow: var(--ask-shadow-md);
+  z-index: var(--ask-z-modal);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: askly-menu-enter var(--ask-duration-fast) var(--ask-ease-out);
+}
+
+@keyframes askly-menu-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.askly-user-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--ask-space-3);
+  width: 100%;
+  padding: var(--ask-space-2) var(--ask-space-3);
+  border: none;
+  border-radius: var(--ask-radius-sm);
+  background: none;
+  color: var(--ask-gray-600);
+  font-size: var(--ask-text-sm);
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background var(--ask-duration-fast) var(--ask-ease-out),
+    color var(--ask-duration-fast) var(--ask-ease-out);
+}
+
+.askly-user-menu-item svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.askly-user-menu-item:hover {
+  background: var(--ask-surface-sunken);
+  color: var(--ask-gray-900);
+  text-decoration: none;
+}
+
+.askly-user-menu-item:hover svg {
+  opacity: 1;
+}
+
+.askly-user-menu-item.is-active {
+  color: var(--ask-accent);
+}
+
+.askly-user-menu-item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ask-accent-glow);
+}
+
+.askly-user-menu-logout {
+  color: var(--ask-danger);
+}
+
+.askly-user-menu-logout:hover {
+  background: rgba(239, 68, 68, 0.10);
+  color: var(--ask-danger);
+}
+
+.askly-user-menu-logout svg {
+  opacity: 0.85;
+}
+
+.askly-user-menu-sep {
+  height: 1px;
+  margin: var(--ask-space-1) 0;
+  background: var(--ask-border);
+}
+
+/* Theme labels inside the menu: show the action the click performs */
+.askly-user-menu-item .askly-theme-label-light { display: none; }
+.askly-user-menu-item .askly-theme-label-dark { display: inline; }
+:root[data-theme="dark"] .askly-user-menu-item .askly-theme-label-light { display: inline; }
+:root[data-theme="dark"] .askly-user-menu-item .askly-theme-label-dark { display: none; }
 
 .askly-app-content {
   padding: var(--ask-space-8);
@@ -972,11 +1634,239 @@ button, input, select, textarea {
 
 /* ── Cards & Containers ──────────────────────────────────────── */
 .askly-card {
-  background: var(--ask-white);
+  background: var(--ask-surface);
   border-radius: var(--ask-radius-lg);
   box-shadow: var(--ask-shadow-sm);
-  border: 1px solid var(--ask-gray-200);
+  border: 1px solid var(--ask-border);
   overflow: hidden;
+}
+
+/* ── Ticket Filters ────────────────────────────────────────── */
+.askly-filters {
+  padding: 0;
+  margin-bottom: var(--ask-space-5);
+  overflow: hidden;
+}
+
+.askly-filters__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ask-space-4);
+  padding: var(--ask-space-4) var(--ask-space-5);
+  border-bottom: 1px solid var(--ask-border);
+  background: var(--ask-surface-sunken);
+}
+
+.askly-filters__title {
+  display: flex;
+  align-items: center;
+  gap: var(--ask-space-2);
+  margin: 0;
+  font-size: var(--ask-text-sm);
+  font-weight: 600;
+  color: var(--ask-gray-700);
+  letter-spacing: var(--ask-tracking-wide);
+  text-transform: uppercase;
+}
+
+.askly-filters__title svg {
+  width: 16px;
+  height: 16px;
+  color: var(--ask-teal-500);
+  flex-shrink: 0;
+}
+
+.askly-filters__clear {
+  font-size: var(--ask-text-sm);
+  font-weight: 600;
+  color: var(--ask-teal-600);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.askly-filters__clear:hover {
+  color: var(--ask-teal-500);
+  text-decoration: underline;
+}
+
+.askly-filters__body {
+  padding: var(--ask-space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ask-space-5);
+}
+
+.askly-filters__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--ask-space-4);
+}
+
+.askly-filters__field {
+  min-width: 0;
+}
+
+.askly-filter-label {
+  display: block;
+  font-size: var(--ask-text-xs);
+  font-weight: 600;
+  color: var(--ask-gray-500);
+  text-transform: uppercase;
+  letter-spacing: var(--ask-tracking-wide);
+  margin-bottom: var(--ask-space-2);
+}
+
+.askly-filters__footer {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ask-space-3);
+  padding-top: var(--ask-space-5);
+  border-top: 1px solid var(--ask-border);
+}
+
+.askly-filters__search {
+  flex: 1;
+  min-width: 0;
+}
+
+.askly-filters__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ask-space-2);
+  flex-shrink: 0;
+}
+
+.askly-filters__actions .askly-btn {
+  width: auto;
+  min-width: 108px;
+  height: 48px;
+  padding: 0 var(--ask-space-5);
+  white-space: nowrap;
+}
+
+.askly-filters__actions .askly-btn--primary {
+  width: auto;
+}
+
+@media (max-width: 640px) {
+  .askly-filters__footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .askly-filters__actions {
+    width: 100%;
+  }
+
+  .askly-filters__actions .askly-btn {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* ── Pagination ────────────────────────────────────────────── */
+.askly-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ask-space-4);
+  margin-top: var(--ask-space-5);
+  flex-wrap: wrap;
+}
+
+.askly-pagination__info {
+  color: var(--ask-gray-500);
+  font-size: var(--ask-text-sm);
+}
+
+.askly-pagination__nav {
+  display: flex;
+  align-items: center;
+  gap: var(--ask-space-2);
+  flex-wrap: wrap;
+}
+
+.askly-pagination__pages {
+  display: flex;
+  align-items: center;
+  gap: var(--ask-space-1);
+}
+
+.askly-pagination__page {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 var(--ask-space-2);
+  border-radius: var(--ask-radius-md);
+  border: 1.5px solid var(--ask-border);
+  background: var(--ask-surface);
+  color: var(--ask-gray-700);
+  font-size: var(--ask-text-sm);
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    border-color var(--ask-duration-fast) var(--ask-ease-out),
+    background var(--ask-duration-fast) var(--ask-ease-out);
+}
+
+.askly-pagination__page:hover {
+  border-color: var(--ask-teal-500);
+  color: var(--ask-teal-600);
+}
+
+.askly-pagination__page--active {
+  background: var(--ask-gradient-brand);
+  border-color: transparent;
+  color: var(--ask-on-brand);
+  pointer-events: none;
+}
+
+.askly-pagination__nav .askly-btn {
+  width: auto;
+  height: 36px;
+  padding: 0 var(--ask-space-4);
+  font-size: var(--ask-text-sm);
+}
+
+@media (max-width: 640px) {
+  .askly-pagination {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .askly-pagination__nav {
+    justify-content: center;
+  }
+}
+
+/* ── Search Form ───────────────────────────────────────────── */
+.askly-search-form {
+  display: flex;
+  gap: var(--ask-space-3);
+  padding: var(--ask-space-4);
+  margin-bottom: var(--ask-space-5);
+}
+
+.askly-search-form .askly-input-wrap {
+  flex: 1;
+}
+
+.askly-search-form .askly-btn {
+  flex-shrink: 0;
+  width: auto;
+}
+
+@media (max-width: 480px) {
+  .askly-search-form {
+    flex-direction: column;
+  }
+
+  .askly-search-form .askly-btn {
+    width: 100%;
+  }
 }
 
 /* ── Tables ────────────────────────────────────────────────── */
@@ -994,11 +1884,11 @@ button, input, select, textarea {
 .askly-table th,
 .askly-table td {
   padding: var(--ask-space-4) var(--ask-space-5);
-  border-bottom: 1px solid var(--ask-gray-200);
+  border-bottom: 1px solid var(--ask-border);
 }
 
 .askly-table th {
-  background: var(--ask-gray-50);
+  background: var(--ask-surface-sunken);
   font-weight: 600;
   color: var(--ask-gray-600);
   font-size: var(--ask-text-sm);
@@ -1011,7 +1901,7 @@ button, input, select, textarea {
 }
 
 .askly-table tbody tr:hover {
-  background: var(--ask-gray-50);
+  background: var(--ask-surface-sunken);
 }
 
 .askly-table td {
@@ -1065,4 +1955,263 @@ button, input, select, textarea {
 .askly-badge--neutral {
   background: var(--ask-gray-100);
   color: var(--ask-gray-600);
+}
+
+/* ============================================================
+   THEME TOGGLE
+   Floating control (base.html). On logged-in pages the toggle
+   instead lives in the header user menu (see .askly-user-menu).
+   Works in both light and dark themes.
+   ============================================================ */
+.askly-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ask-space-2);
+  border: 1px solid var(--ask-glass-border);
+  background: var(--ask-glass-bg-strong);
+  color: var(--ask-text-secondary);
+  cursor: pointer;
+  border-radius: var(--ask-radius-full);
+  transition:
+    color var(--ask-duration-fast) var(--ask-ease-out),
+    background var(--ask-duration-fast) var(--ask-ease-out),
+    border-color var(--ask-duration-fast) var(--ask-ease-out),
+    transform var(--ask-duration-fast) var(--ask-ease-out);
+}
+
+.askly-theme-toggle:hover {
+  color: var(--ask-text-primary);
+  border-color: var(--ask-glass-border-hover);
+}
+
+.askly-theme-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ask-accent-glow);
+}
+
+.askly-theme-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Show sun in dark mode (click → light), moon in light mode.
+   Applies to any [data-theme-toggle] control (floating button in
+   base.html and the user-menu item in the app header). */
+[data-theme-toggle] .askly-theme-icon-sun { display: none; }
+[data-theme-toggle] .askly-theme-icon-moon { display: block; }
+:root[data-theme="dark"] [data-theme-toggle] .askly-theme-icon-sun { display: block; }
+:root[data-theme="dark"] [data-theme-toggle] .askly-theme-icon-moon { display: none; }
+
+/* Floating variant (global, bottom-right) */
+.askly-theme-toggle--float {
+  position: fixed;
+  right: var(--ask-space-5);
+  bottom: var(--ask-space-5);
+  width: 48px;
+  height: 48px;
+  z-index: var(--ask-z-top);
+  box-shadow: var(--ask-shadow-md);
+  backdrop-filter: blur(var(--ask-glass-blur));
+  -webkit-backdrop-filter: blur(var(--ask-glass-blur));
+}
+
+.askly-theme-toggle--float:hover {
+  transform: translateY(-2px);
+}
+
+/* On logged-in pages the theme control lives in the header user
+   menu, so the global floating toggle is hidden via this flag set
+   on the app layout root. */
+.askly-has-sidebar-toggle .askly-theme-toggle--float {
+  display: none;
+}
+
+/* ============================================================
+   DARK THEME — COMPONENT FINE-TUNING
+   Variable remaps cover most surfaces; these rules fix the few
+   components that hard-code light values or need stronger
+   contrast against the dark base.
+   ============================================================ */
+:root[data-theme="dark"] {
+  /* Auth form panel becomes a dark glass surface */
+  --ask-auth-form-bg: rgba(13, 22, 40, 0.96);
+}
+
+/* Notifications: lift text/background for legibility on dark */
+:root[data-theme="dark"] .askly-notification--danger {
+  background: rgba(239, 68, 68, 0.16);
+  border-color: rgba(239, 68, 68, 0.40);
+  color: #fca5a5;
+}
+
+:root[data-theme="dark"] .askly-notification--success {
+  background: rgba(16, 185, 129, 0.16);
+  border-color: rgba(16, 185, 129, 0.40);
+  color: #6ee7b7;
+}
+
+:root[data-theme="dark"] .askly-notification--info {
+  background: rgba(14, 165, 233, 0.16);
+  border-color: rgba(14, 165, 233, 0.40);
+  color: #7dd3fc;
+}
+
+:root[data-theme="dark"] .askly-notification--warning {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(245, 158, 11, 0.40);
+  color: #fcd34d;
+}
+
+/* Badges: brighten the accent text so it reads on dark fills */
+:root[data-theme="dark"] .askly-badge--info { color: var(--ask-sky-400); }
+:root[data-theme="dark"] .askly-badge--success { color: var(--ask-emerald-400); }
+:root[data-theme="dark"] .askly-badge--warning { color: #fbbf24; }
+:root[data-theme="dark"] .askly-badge--danger { color: #f87171; }
+
+/* Ghost button + kbd already use remapped grays; nudge accents */
+:root[data-theme="dark"] .askly-btn--ghost {
+  color: var(--ask-teal-300);
+}
+
+:root[data-theme="dark"] .askly-btn--ghost:hover {
+  border-color: var(--ask-teal-400);
+  background: rgba(20, 184, 166, 0.10);
+}
+
+/* Inputs: brighten focus glow against the darker field */
+:root[data-theme="dark"] .askly-input:focus {
+  border-color: var(--ask-teal-400);
+  box-shadow:
+    0 0 0 4px rgba(20, 184, 166, 0.18),
+    var(--ask-shadow-inner-glow);
+}
+
+:root[data-theme="dark"] .askly-checkbox-wrap:hover .askly-checkbox-box {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+:root[data-theme="dark"] .askly-checkbox:checked + .askly-checkbox-box {
+  background: var(--ask-teal-400);
+  border-color: var(--ask-teal-400);
+}
+
+:root[data-theme="dark"] .askly-checkbox-label {
+  color: var(--ask-gray-400);
+}
+
+:root[data-theme="dark"] .askly-checkbox-wrap:hover .askly-checkbox-label {
+  color: var(--ask-gray-300);
+}
+
+:root[data-theme="dark"] .askly-auth-panel .askly-label {
+  color: var(--ask-gray-500);
+}
+
+:root[data-theme="dark"] .askly-auth-panel .askly-checkbox-label {
+  color: var(--ask-text-secondary);
+}
+
+:root[data-theme="dark"] .askly-auth-split__form::after {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 15%,
+    rgba(255, 255, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0.06) 85%,
+    transparent 100%
+  );
+}
+
+:root[data-theme="dark"] .askly-btn--secondary {
+  color: var(--ask-gray-700);
+  border-color: var(--ask-gray-300);
+}
+
+:root[data-theme="dark"] .askly-btn--secondary:hover,
+:root[data-theme="dark"] a.askly-btn--secondary:hover {
+  color: var(--ask-gray-800);
+  border-color: var(--ask-gray-400);
+}
+
+:root[data-theme="dark"] .askly-badge--neutral {
+  background: var(--ask-gray-200);
+  color: var(--ask-gray-700);
+  border: 1px solid var(--ask-gray-300);
+}
+
+:root[data-theme="dark"] .askly-help a {
+  color: var(--ask-teal-300);
+}
+
+:root[data-theme="dark"] .askly-help a:hover {
+  color: var(--ask-teal-400);
+}
+
+:root[data-theme="dark"] .askly-table td a:hover {
+  color: var(--ask-teal-400);
+}
+
+/* Novo chamado — priority cards */
+:root[data-theme="dark"] .novo-prio:hover .novo-prio-body {
+  border-color: var(--ask-gray-400);
+}
+
+:root[data-theme="dark"] .novo-prio input:focus-visible + .novo-prio-body {
+  box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.18);
+}
+
+:root[data-theme="dark"] .novo-prio input:checked + .novo-prio-body {
+  box-shadow:
+    0 0 0 4px rgba(20, 184, 166, 0.14),
+    var(--ask-shadow-inner-glow);
+}
+
+/* ── Error pages (401–500) ───────────────────────────────────── */
+.askly-page--error {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ask-space-8);
+  background: var(--ask-surface-app);
+}
+
+.askly-error {
+  text-align: center;
+  max-width: 28rem;
+}
+
+.askly-error__code {
+  font-size: 4.5rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: var(--ask-tracking-tight);
+  color: var(--ask-gray-900);
+  margin-bottom: var(--ask-space-3);
+}
+
+.askly-error__title {
+  font-size: var(--ask-text-xl);
+  font-weight: 700;
+  color: var(--ask-gray-800);
+  margin-bottom: var(--ask-space-2);
+}
+
+.askly-error__message {
+  font-size: var(--ask-text-base);
+  color: var(--ask-gray-600);
+  line-height: var(--ask-leading-relaxed);
+  margin-bottom: var(--ask-space-8);
+}
+
+.askly-error__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ask-space-3);
+  justify-content: center;
+}
+
+.askly-error__actions .askly-btn {
+  width: auto;
 }

@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: askly
+          POSTGRES_PASSWORD: askly_dev_password
+          POSTGRES_DB: askly_test_db
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd "pg_isready -U askly -d askly_test_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql+psycopg2://askly:askly_dev_password@localhost:5432/askly_test_db
+      SECRET_KEY: ci-secret-key
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependências
+        run: pip install ".[dev,test]"
+
+      # Lint BLOQUEANTE: se a formatação (black/isort) ou o flake8 acusarem
+      # problema, o job falha. Antes era "advisory" (continue-on-error) porque
+      # o flake8 usava o limite default de 79 colunas, conflitando com o black
+      # (100). Isso foi resolvido pelo arquivo `.flake8`, então agora o lint
+      # pode de fato barrar o merge.
+      - name: Lint
+        run: |
+          black --check .
+          isort --check-only .
+          flake8 .
+
+      # Testes + cobertura. O gate de cobertura (--cov-fail-under=80) está
+      # configurado no pyproject (tool.pytest.ini_options.addopts), então um
+      # simples `pytest` já mede a cobertura e falha o job se cair abaixo de 80%.
+      - name: Testes
+        run: pytest

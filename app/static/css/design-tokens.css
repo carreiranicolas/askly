@@ -45,6 +45,10 @@
   --ask-warning: #f59e0b;
   --ask-danger: #ef4444;
 
+  /* Text/icons on brand gradients and saturated buttons.
+     Never use --ask-white here — it remaps to a dark panel in dark mode. */
+  --ask-on-brand: #ffffff;
+
   /* ── Color Aliases (Theme) ───────────────────────────────── */
   --ask-bg-deep: var(--ask-navy-800);
   --ask-bg-page: var(--ask-navy-900);
@@ -156,4 +160,74 @@
 
   /* Force light color-scheme for form controls */
   color-scheme: dark light;
+
+  /* ── Theme Surface Tokens (consumed by app.css) ──────────────
+     These abstract surfaces are remapped in dark mode below.
+     Light theme (default) keeps the historical light app shell. */
+  --ask-surface: var(--ask-white);          /* cards, header, panels */
+  --ask-surface-raised: var(--ask-white);   /* elevated surfaces      */
+  --ask-surface-sunken: var(--ask-gray-50); /* table head, hovers     */
+  --ask-surface-app: var(--ask-gray-50);    /* main app background     */
+  --ask-border: var(--ask-gray-200);        /* hairline borders        */
+  --ask-input-bg: var(--ask-white);
+  --ask-input-border: var(--ask-gray-200);
+}
+
+/* ============================================================
+   DARK THEME OVERRIDES
+   Activated by :root[data-theme="dark"]. Remaps the neutral
+   ramp + alias/surface tokens to a coherent dark palette while
+   preserving the teal/sky brand accents.
+   ============================================================ */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Invert the neutral ramp so existing components that pull
+     gray-50 for "light fills" and gray-900 for "dark text"
+     automatically gain correct contrast on dark backgrounds. */
+  --ask-gray-50:  #0b1220;
+  --ask-gray-100: #131c2e;
+  --ask-gray-200: #1f2a3d;
+  --ask-gray-300: #2c3a52;
+  --ask-gray-400: #6b7c95;
+  --ask-gray-500: #8a9bb5;
+  --ask-gray-600: #aab8cf;
+  --ask-gray-700: #c5d0e1;
+  --ask-gray-800: #dde5f0;
+  --ask-gray-900: #f1f5fb;
+
+  /* White is used as a "surface" colour in many components; in
+     dark mode it should read as a raised dark panel, not pure
+     white. Brand accents stay vivid. */
+  --ask-white: #131c2e;
+
+  /* Alias tokens */
+  --ask-bg-deep: #060b15;
+  --ask-bg-page: #060b15;
+  --ask-text-primary: #f1f5fb;
+  --ask-text-secondary: #aab8cf;
+  --ask-text-muted: #8a9bb5;
+  --ask-text-dark: #f1f5fb;
+  --ask-accent: var(--ask-teal-400);
+  --ask-accent-hover: var(--ask-teal-300);
+  --ask-accent-glow: rgba(20, 184, 166, 0.40);
+
+  /* Surface tokens for the app shell */
+  --ask-surface: #101a2c;
+  --ask-surface-raised: #16223a;
+  --ask-surface-sunken: #0b1220;
+  --ask-surface-app: #080e1a;
+  --ask-border: rgba(255, 255, 255, 0.08);
+  --ask-input-bg: #0d1726;
+  --ask-input-border: rgba(255, 255, 255, 0.12);
+
+  /* Glass surfaces read a touch stronger on the darker base */
+  --ask-glass-light-bg: rgba(16, 26, 44, 0.92);
+  --ask-glass-light-border: rgba(255, 255, 255, 0.08);
+
+  /* Soften heavy shadows on dark backgrounds */
+  --ask-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --ask-shadow-md: 0 8px 30px rgba(0, 0, 0, 0.50);
+  --ask-shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.55);
+  --ask-shadow-xl: 0 30px 90px rgba(0, 0, 0, 0.60);
 }

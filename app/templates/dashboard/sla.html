@@ -1,0 +1,226 @@
+{% extends "layouts/app.html" %}
+{% block title %}SLA & Métricas | Askly{% endblock %}
+{% block page_title %}SLA &amp; Métricas{% endblock %}
+
+{% block extra_css %}
+<style>
+  .sla-lead {
+    color: var(--ask-gray-500);
+    font-size: var(--ask-text-sm);
+    margin: calc(-1 * var(--ask-space-2)) 0 var(--ask-space-6);
+    line-height: var(--ask-leading-normal);
+    max-width: 52rem;
+  }
+
+  .sla-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: var(--ask-space-4);
+    margin-bottom: var(--ask-space-6);
+  }
+
+  .sla-summary__card {
+    padding: var(--ask-space-5);
+  }
+
+  .sla-summary__label {
+    display: block;
+    font-size: var(--ask-text-xs);
+    color: var(--ask-gray-500);
+    text-transform: uppercase;
+    letter-spacing: var(--ask-tracking-wide);
+    font-weight: 600;
+  }
+
+  .sla-summary__value {
+    margin-top: var(--ask-space-2);
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1.1;
+  }
+
+  .sla-section-title {
+    font-size: var(--ask-text-sm);
+    color: var(--ask-gray-500);
+    text-transform: uppercase;
+    letter-spacing: var(--ask-tracking-wide);
+    margin-bottom: var(--ask-space-4);
+    font-weight: 600;
+  }
+
+  .sla-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: var(--ask-space-6);
+    margin-bottom: var(--ask-space-6);
+  }
+
+  .sla-bar-row {
+    display: grid;
+    grid-template-columns: 120px 1fr 64px;
+    align-items: center;
+    gap: var(--ask-space-3);
+    margin-bottom: var(--ask-space-4);
+  }
+
+  .sla-bar-row:last-child { margin-bottom: 0; }
+
+  .sla-bar-label {
+    font-size: var(--ask-text-sm);
+    color: var(--ask-gray-700);
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sla-bar-track {
+    height: 10px;
+    border-radius: var(--ask-radius-full);
+    background: var(--ask-surface-sunken);
+    overflow: hidden;
+  }
+
+  .sla-bar-fill {
+    height: 100%;
+    border-radius: var(--ask-radius-full);
+    background: var(--ask-gradient-brand);
+    transition: width var(--ask-duration-slow) var(--ask-ease-out);
+  }
+
+  .sla-bar-val {
+    font-size: var(--ask-text-sm);
+    color: var(--ask-gray-600);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .sla-empty {
+    color: var(--ask-gray-500);
+    font-size: var(--ask-text-sm);
+    padding: var(--ask-space-6) 0;
+    text-align: center;
+  }
+
+  .sla-row--unassigned {
+    background: rgba(245, 158, 11, 0.06);
+  }
+
+  .sla-row--overdue {
+    background: rgba(239, 68, 68, 0.04);
+  }
+
+  .sla-row--unassigned.sla-row--overdue {
+    background: rgba(239, 68, 68, 0.08);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+  <p class="sla-lead askly-stagger">
+    Chamados com SLA em contagem (<strong>Em andamento</strong>) e desempenho histórico por área com base nas finalizações.
+  </p>
+
+  {% set resumo = report.resumo %}
+  <div class="sla-summary askly-stagger">
+    {% set cards = [
+      ('SLA correndo', resumo.correndo, 'var(--ask-info)'),
+      ('Atrasados', resumo.atrasados, 'var(--ask-danger)'),
+      ('Vence em 24h', resumo.vence_24h, 'var(--ask-warning)'),
+      ('Sem responsável', resumo.sem_responsavel, 'var(--ask-warning)'),
+    ] %}
+    {% for label, value, color in cards %}
+      <div class="askly-card sla-summary__card">
+        <span class="sla-summary__label">{{ label }}</span>
+        <div class="sla-summary__value" style="color: {{ color }};">{{ value }}</div>
+      </div>
+    {% endfor %}
+  </div>
+
+  {% set por_area = report.por_area | selectattr('fechados') | list %}
+  {% set max_avg = (por_area | map(attribute='avg_hours') | list | max) if por_area else 0 %}
+
+  <div class="sla-grid askly-stagger">
+    <div class="askly-card" style="padding: var(--ask-space-6);">
+      <h3 class="sla-section-title">Tempo médio de fechamento por área</h3>
+      {% for a in por_area %}
+        <div class="sla-bar-row">
+          <span class="sla-bar-label" title="{{ a.area }}">{{ a.area }}</span>
+          <span class="sla-bar-track">
+            <span class="sla-bar-fill" style="width: {{ (a.avg_hours / max_avg * 100) if max_avg else 0 }}%;"></span>
+          </span>
+          <span class="sla-bar-val">{{ a.avg_label }}</span>
+        </div>
+      {% else %}
+        <p class="sla-empty">Sem chamados fechados para calcular o tempo médio.</p>
+      {% endfor %}
+    </div>
+
+    <div class="askly-card" style="padding: var(--ask-space-6);">
+      <h3 class="sla-section-title">Cumprimento de SLA por área</h3>
+      {% for a in por_area %}
+        {% set color = 'var(--ask-success)' if a.sla_compliance >= 80 else ('var(--ask-warning)' if a.sla_compliance >= 50 else 'var(--ask-danger)') %}
+        <div class="sla-bar-row">
+          <span class="sla-bar-label" title="{{ a.area }}">{{ a.area }}</span>
+          <span class="sla-bar-track">
+            <span class="sla-bar-fill" style="width: {{ a.sla_compliance }}%; background: {{ color }};"></span>
+          </span>
+          <span class="sla-bar-val">{{ a.sla_compliance }}%</span>
+        </div>
+      {% else %}
+        <p class="sla-empty">Sem chamados fechados para medir o SLA.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="askly-card askly-stagger">
+    <div style="padding: var(--ask-space-6) var(--ask-space-6) 0;">
+      <h3 class="sla-section-title">SLA dos chamados em aberto</h3>
+    </div>
+    <div class="askly-table-wrapper">
+      <table class="askly-table">
+        <thead>
+          <tr>
+            <th>Nº</th>
+            <th>Título</th>
+            <th>Área</th>
+            <th>Responsável</th>
+            <th>Prioridade</th>
+            <th>Prazo do SLA</th>
+            <th>Situação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in report.ativos %}
+            {% set sem_responsavel = not r.ticket.assignee %}
+            <tr{% if sem_responsavel or r.overdue %} class="{{ 'sla-row--unassigned' if sem_responsavel }}{% if r.overdue %} sla-row--overdue{% endif %}"{% endif %}>
+              <td><span class="askly-kbd">#{{ r.ticket.id }}</span></td>
+              <td><a href="{{ url_for('web_tickets.detalhe', id=r.ticket.id) }}">{{ r.ticket.title }}</a></td>
+              <td>{{ r.ticket.category.name if r.ticket.category else '—' }}</td>
+              <td>
+                {% if r.ticket.assignee %}
+                  {{ r.ticket.assignee.name }}
+                {% else %}
+                  <span class="askly-badge askly-badge--warning">Não atribuído</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="askly-badge askly-badge--{{ 'danger' if r.ticket.priority.name in ['Alta', 'Crítica'] else ('warning' if r.ticket.priority.name == 'Média' else 'neutral') }}">
+                  {{ r.ticket.priority.name }}
+                </span>
+              </td>
+              <td>{{ r.deadline | local if r.deadline else '—' }}</td>
+              <td>
+                <span class="askly-badge askly-badge--{{ 'danger' if r.overdue else 'success' }}">{{ r.remaining_label }}</span>
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="7" class="sla-empty">Nenhum chamado com SLA correndo no momento.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

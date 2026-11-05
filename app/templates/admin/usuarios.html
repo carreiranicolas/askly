@@ -1,52 +1,647 @@
-{% extends "layouts/base.html" %}
+{% extends "layouts/app.html" %}
 {% block title %}Usuários | Admin | Askly{% endblock %}
+{% block page_title %}Usuários{% endblock %}
 
-{% block content %}
-  <h1 class="title">Admin · Usuários</h1>
+{% block extra_css %}
+<style>
+  .adm-shell {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ask-space-4);
+  }
 
-  <div class="table-container">
-    <table class="table is-fullwidth is-striped">
-      <thead>
-        <tr>
-          <th>Nome</th>
-          <th>Email</th>
-          <th>Perfil</th>
-          <th>Ativo</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for u in usuarios.items %}
-          <tr>
-            <td>{{ u.nome }}</td>
-            <td>{{ u.email }}</td>
-            <td>{{ u.perfil_display }}</td>
-            <td>{{ 'Sim' if u.ativo else 'Não' }}</td>
-            <td>
-              <form method="post" action="{{ url_for('web_admin.alterar_perfil', id=u.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                <div class="field has-addons">
-                  <div class="control">
-                    <div class="select">
-                      <select name="perfil">
-                        {% for p in PerfilUsuario %}
-                          <option value="{{ p.value }}" {% if u.perfil == p.value %}selected{% endif %}>
-                            {{ p.display_name }}
-                          </option>
-                        {% endfor %}
-                      </select>
-                    </div>
-                  </div>
-                  <div class="control">
-                    <button class="button is-light" type="submit">Salvar</button>
-                  </div>
-                </div>
-              </form>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+  .adm-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ask-space-4);
+    flex-wrap: wrap;
+  }
+
+  .adm-search {
+    position: relative;
+    flex: 1;
+    min-width: min(100%, 280px);
+    max-width: 360px;
+  }
+
+  .adm-search svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    color: var(--ask-gray-400);
+    pointer-events: none;
+  }
+
+  .adm-search input {
+    width: 100%;
+    height: 40px;
+    padding: 0 var(--ask-space-4) 0 36px;
+    border: 1px solid var(--ask-border);
+    border-radius: var(--ask-radius-lg);
+    background: var(--ask-surface);
+    color: var(--ask-gray-900);
+    font-size: var(--ask-text-sm);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .adm-search input:focus {
+    outline: none;
+    border-color: var(--ask-teal-500);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
+  }
+
+  .adm-stats {
+    display: flex;
+    align-items: center;
+    gap: var(--ask-space-4);
+    font-size: var(--ask-text-sm);
+    color: var(--ask-gray-500);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .adm-stats strong {
+    color: var(--ask-gray-800);
+    font-weight: 600;
+  }
+
+  .adm-card {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .adm-table .adm-member {
+    display: flex;
+    align-items: center;
+    gap: var(--ask-space-3);
+    min-width: 200px;
+  }
+
+  .adm-table .adm-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--ask-text-sm);
+    font-weight: 600;
+    background: var(--ask-gray-100);
+    color: var(--ask-gray-700);
+    flex-shrink: 0;
+  }
+
+  .adm-table .adm-member-text {
+    min-width: 0;
+  }
+
+  .adm-table .adm-member-name {
+    display: block;
+    font-weight: 600;
+    color: var(--ask-gray-900);
+    line-height: 1.3;
+  }
+
+  .adm-table .adm-member-email {
+    display: block;
+    font-size: var(--ask-text-xs);
+    color: var(--ask-gray-500);
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .adm-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: var(--ask-text-xs);
+    font-weight: 500;
+    line-height: 1.6;
+    border: 1px solid transparent;
+  }
+
+  .adm-tag--admin {
+    background: rgba(13, 148, 136, 0.1);
+    color: var(--ask-teal-600);
+    border-color: rgba(13, 148, 136, 0.15);
+  }
+
+  .adm-tag--staff {
+    background: var(--ask-gray-100);
+    color: var(--ask-gray-700);
+    border-color: var(--ask-gray-200);
+  }
+
+  .adm-tag--guest {
+    background: transparent;
+    color: var(--ask-gray-500);
+    border-color: var(--ask-gray-200);
+  }
+
+  .adm-area {
+    color: var(--ask-gray-700);
+  }
+
+  .adm-area--empty {
+    color: var(--ask-gray-400);
+  }
+
+  .adm-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--ask-text-sm);
+    color: var(--ask-gray-500);
+  }
+
+  .adm-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--ask-gray-300);
+    flex-shrink: 0;
+  }
+
+  .adm-status--on {
+    color: var(--ask-gray-700);
+  }
+
+  .adm-status--on .adm-status-dot {
+    background: var(--ask-emerald-500);
+  }
+
+  .adm-table-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--ask-space-1);
+    white-space: nowrap;
+  }
+
+  .adm-table-actions-th {
+    width: 88px;
+    text-align: right;
+  }
+
+  .adm-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: var(--ask-radius-md);
+    background: transparent;
+    color: var(--ask-gray-500);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .adm-icon-btn:hover {
+    background: var(--ask-gray-100);
+    color: var(--ask-gray-800);
+  }
+
+  .adm-icon-btn--danger:hover {
+    background: rgba(239, 68, 68, 0.08);
+    color: #dc2626;
+  }
+
+  .adm-icon-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .adm-row--inactive {
+    opacity: 0.55;
+  }
+
+  .adm-row--inactive:hover {
+    opacity: 0.75;
+  }
+
+  .adm-empty {
+    padding: var(--ask-space-10);
+    text-align: center;
+    color: var(--ask-gray-500);
+    font-size: var(--ask-text-sm);
+  }
+
+  .adm-no-results {
+    display: none;
+    padding: var(--ask-space-8);
+    text-align: center;
+    color: var(--ask-gray-500);
+    font-size: var(--ask-text-sm);
+  }
+
+  .adm-no-results.is-visible {
+    display: block;
+  }
+
+  /* Modal */
+  .adm-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    border: none;
+    border-radius: var(--ask-radius-xl);
+    padding: 0;
+    width: min(420px, calc(100vw - 32px));
+    max-height: min(calc(100vh - 32px), 90vh);
+    overflow: auto;
+    background: var(--ask-surface);
+    color: var(--ask-gray-900);
+    box-shadow: 0 24px 48px rgba(15, 23, 42, 0.16);
+  }
+
+  .adm-modal:not([open]) {
+    display: none;
+  }
+
+  .adm-modal::backdrop {
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(2px);
+  }
+
+  .adm-modal__header {
+    padding: var(--ask-space-5) var(--ask-space-5) var(--ask-space-3);
+  }
+
+  .adm-modal__title {
+    margin: 0;
+    font-size: var(--ask-text-base);
+    font-weight: 600;
+    color: var(--ask-gray-900);
+  }
+
+  .adm-modal__subtitle {
+    margin: var(--ask-space-1) 0 0;
+    font-size: var(--ask-text-sm);
+    color: var(--ask-gray-500);
+  }
+
+  .adm-modal__body {
+    padding: 0 var(--ask-space-5) var(--ask-space-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ask-space-4);
+  }
+
+  .adm-modal__field label {
+    display: block;
+    font-size: var(--ask-text-xs);
+    font-weight: 500;
+    color: var(--ask-gray-600);
+    margin-bottom: var(--ask-space-2);
+  }
+
+  .adm-modal__field .askly-input {
+    height: 40px;
+    font-size: var(--ask-text-sm);
+  }
+
+  .adm-modal__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--ask-space-2);
+    padding: var(--ask-space-4) var(--ask-space-5);
+    border-top: 1px solid var(--ask-border);
+    background: var(--ask-surface-sunken);
+    border-radius: 0 0 var(--ask-radius-xl) var(--ask-radius-xl);
+  }
+
+  .adm-modal__footer .askly-btn {
+    width: auto;
+    min-width: 96px;
+    height: 38px;
+    padding: 0 var(--ask-space-4);
+    font-size: var(--ask-text-sm);
+    box-shadow: none;
+    transform: none;
+  }
+
+  .adm-modal__footer .askly-btn--primary {
+    box-shadow: none;
+  }
+
+  .adm-modal__footer .askly-btn--primary:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .adm-modal__footer .askly-btn--primary::after {
+    display: none;
+  }
+
+  .adm-modal__text {
+    margin: 0;
+    font-size: var(--ask-text-sm);
+    color: var(--ask-gray-600);
+    line-height: 1.5;
+  }
+
+  :root[data-theme="dark"] .adm-search input {
+    background: var(--ask-surface);
+    color: var(--ask-gray-100);
+  }
+
+  :root[data-theme="dark"] .adm-table .adm-member-name,
+  :root[data-theme="dark"] .adm-modal__title {
+    color: var(--ask-gray-100);
+  }
+
+  :root[data-theme="dark"] .adm-table .adm-avatar {
+    background: var(--ask-gray-800);
+    color: var(--ask-gray-300);
+  }
+
+  :root[data-theme="dark"] .adm-tag--staff {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.08);
+    color: var(--ask-gray-300);
+  }
+
+  :root[data-theme="dark"] .adm-modal {
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+  }
+</style>
 {% endblock %}
 
+{% block content %}
+  {% set ativos = usuarios | selectattr('is_active') | list | length %}
+  <div class="adm-shell askly-stagger">
+    <div class="adm-toolbar">
+      <div class="adm-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="search" id="adm-user-search" placeholder="Buscar nome ou e-mail…" autocomplete="off" />
+      </div>
+      <div class="adm-stats">
+        <span><strong>{{ usuarios|length }}</strong> membros</span>
+        <span><strong>{{ ativos }}</strong> ativos</span>
+      </div>
+    </div>
+
+    <div class="askly-card adm-card">
+      {% if usuarios %}
+        <div class="askly-table-wrapper">
+          <table class="askly-table adm-table">
+            <thead>
+              <tr>
+                <th>Membro</th>
+                <th>Cargo</th>
+                <th>Área</th>
+                <th>Status</th>
+                <th class="adm-table-actions-th" aria-label="Ações"></th>
+              </tr>
+            </thead>
+            <tbody id="adm-users-body">
+              {% for u in usuarios %}
+                {% set role_name = u.cargo.name if u.cargo else '' %}
+                <tr
+                  class="adm-row {{ 'adm-row--inactive' if not u.is_active }}"
+                  data-search="{{ (u.name ~ ' ' ~ u.email) | lower }}"
+                  data-user-id="{{ u.id }}"
+                  data-user-name="{{ u.name }}"
+                  data-role-id="{{ u.role_id }}"
+                  data-area-id="{{ u.area_id or '' }}"
+                  data-is-solicitante="{{ '1' if role_name == 'Solicitante' else '0' }}"
+                >
+                  <td>
+                    <div class="adm-member">
+                      <span class="adm-avatar" aria-hidden="true">{{ u.name[:1].upper() }}</span>
+                      <span class="adm-member-text">
+                        <span class="adm-member-name">{{ u.name }}</span>
+                        <span class="adm-member-email">{{ u.email }}</span>
+                      </span>
+                    </div>
+                  </td>
+                  <td>
+                    {% if role_name == 'Admin' %}
+                      <span class="adm-tag adm-tag--admin">Admin</span>
+                    {% elif role_name == 'Atendente' %}
+                      <span class="adm-tag adm-tag--staff">Atendente</span>
+                    {% else %}
+                      <span class="adm-tag adm-tag--guest">Solicitante</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if u.area %}
+                      <span class="adm-area">{{ u.area.name }}</span>
+                    {% else %}
+                      <span class="adm-area adm-area--empty">—</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <span class="adm-status {{ 'adm-status--on' if u.is_active }}">
+                      <span class="adm-status-dot" aria-hidden="true"></span>
+                      {{ 'Ativo' if u.is_active else 'Inativo' }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="adm-table-actions">
+                      <button
+                        type="button"
+                        class="adm-icon-btn"
+                        data-edit-user
+                        aria-label="Editar {{ u.name }}"
+                        title="Editar perfil"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                      </button>
+                      {% if u.id != current_user.id %}
+                        <button
+                          type="button"
+                          class="adm-icon-btn adm-icon-btn--danger"
+                          data-toggle-user
+                          data-active="{{ '1' if u.is_active else '0' }}"
+                          aria-label="{{ 'Desativar' if u.is_active else 'Reativar' }} {{ u.name }}"
+                          title="{{ 'Desativar' if u.is_active else 'Reativar' }}"
+                        >
+                          {% if u.is_active %}
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                              <circle cx="12" cy="12" r="10"></circle>
+                              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                            </svg>
+                          {% else %}
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                          {% endif %}
+                        </button>
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <p class="adm-no-results" id="adm-no-results">Nenhum usuário encontrado.</p>
+      {% else %}
+        <p class="adm-empty">Nenhum usuário cadastrado.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <dialog id="adm-edit-modal" class="adm-modal">
+    <form method="post" id="adm-edit-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div class="adm-modal__header">
+        <h2 class="adm-modal__title">Editar perfil</h2>
+        <p class="adm-modal__subtitle" id="adm-edit-subtitle"></p>
+      </div>
+      <div class="adm-modal__body">
+        <div class="adm-modal__field">
+          <label for="adm-edit-role">Cargo</label>
+          <select class="askly-input askly-input--no-icon" id="adm-edit-role" name="role_id" required>
+            <option value="" disabled id="adm-edit-role-placeholder">Selecione um perfil…</option>
+            {% for cargo in cargos %}
+              <option value="{{ cargo.id }}">{{ cargo.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="adm-modal__field">
+          <label for="adm-edit-area">Área</label>
+          <select class="askly-input askly-input--no-icon" id="adm-edit-area" name="area_id">
+            <option value="">Sem área</option>
+            {% for area in areas %}
+              <option value="{{ area.id }}">{{ area.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="adm-modal__footer">
+        <button type="button" class="askly-btn askly-btn--ghost" data-close-modal>Cancelar</button>
+        <button type="submit" class="askly-btn askly-btn--primary">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="adm-toggle-modal" class="adm-modal">
+    <form method="post" id="adm-toggle-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div class="adm-modal__header">
+        <h2 class="adm-modal__title" id="adm-toggle-title">Desativar usuário</h2>
+        <p class="adm-modal__subtitle" id="adm-toggle-subtitle"></p>
+      </div>
+      <div class="adm-modal__body">
+        <p class="adm-modal__text" id="adm-toggle-text"></p>
+      </div>
+      <div class="adm-modal__footer">
+        <button type="button" class="askly-btn askly-btn--ghost" data-close-modal>Cancelar</button>
+        <button type="submit" class="askly-btn askly-btn--primary" id="adm-toggle-submit">Confirmar</button>
+      </div>
+    </form>
+  </dialog>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script>
+(function () {
+  var search = document.getElementById('adm-user-search');
+  var tbody = document.getElementById('adm-users-body');
+  var noResults = document.getElementById('adm-no-results');
+  var editModal = document.getElementById('adm-edit-modal');
+  var editForm = document.getElementById('adm-edit-form');
+  var editSubtitle = document.getElementById('adm-edit-subtitle');
+  var editRole = document.getElementById('adm-edit-role');
+  var editArea = document.getElementById('adm-edit-area');
+  var editPlaceholder = document.getElementById('adm-edit-role-placeholder');
+  var toggleModal = document.getElementById('adm-toggle-modal');
+  var toggleForm = document.getElementById('adm-toggle-form');
+  var toggleTitle = document.getElementById('adm-toggle-title');
+  var toggleSubtitle = document.getElementById('adm-toggle-subtitle');
+  var toggleText = document.getElementById('adm-toggle-text');
+  var toggleSubmit = document.getElementById('adm-toggle-submit');
+
+  function filterRows() {
+    if (!search || !tbody) return;
+    var q = search.value.trim().toLowerCase();
+    var visible = 0;
+    tbody.querySelectorAll('tr').forEach(function (row) {
+      var match = !q || row.dataset.search.indexOf(q) !== -1;
+      row.hidden = !match;
+      if (match) visible += 1;
+    });
+    if (noResults) noResults.classList.toggle('is-visible', visible === 0);
+  }
+
+  if (search) search.addEventListener('input', filterRows);
+
+  document.querySelectorAll('[data-close-modal]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var dialog = btn.closest('dialog');
+      if (dialog) dialog.close();
+    });
+  });
+
+  document.querySelectorAll('[data-edit-user]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var row = btn.closest('tr');
+      if (!row || !editModal || !editForm) return;
+
+      editForm.action = '{{ url_for("web_admin.alterar_perfil", id=999999) }}'.replace('999999', row.dataset.userId);
+      editSubtitle.textContent = row.dataset.userName;
+
+      if (row.dataset.isSolicitante === '1') {
+        editRole.value = '';
+        if (editPlaceholder) editPlaceholder.hidden = false;
+      } else {
+        editRole.value = row.dataset.roleId;
+        if (editPlaceholder) editPlaceholder.hidden = true;
+      }
+
+      editArea.value = row.dataset.areaId || '';
+
+      editModal.showModal();
+    });
+  });
+
+  document.querySelectorAll('[data-toggle-user]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var row = btn.closest('tr');
+      if (!row || !toggleModal || !toggleForm) return;
+
+      var isActive = btn.dataset.active === '1';
+      var name = row.dataset.userName;
+
+      toggleForm.action = '{{ url_for("web_admin.toggle_usuario", id=999999) }}'.replace('999999', row.dataset.userId);
+      toggleTitle.textContent = isActive ? 'Desativar usuário' : 'Reativar usuário';
+      toggleSubtitle.textContent = name;
+      toggleText.textContent = isActive
+        ? 'Esta pessoa não poderá fazer login até ser reativada.'
+        : 'A conta voltará a ter acesso à plataforma.';
+      toggleSubmit.textContent = isActive ? 'Desativar' : 'Reativar';
+      toggleSubmit.className = 'askly-btn askly-btn--primary';
+
+      toggleModal.showModal();
+    });
+  });
+
+  [editModal, toggleModal].forEach(function (dialog) {
+    if (!dialog) return;
+    dialog.addEventListener('click', function (e) {
+      if (e.target === dialog) dialog.close();
+    });
+  });
+})();
+</script>
+{% endblock %}

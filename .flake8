@@ -1,0 +1,30 @@
+# Configuração do flake8 alinhada ao black/isort.
+#
+# Motivo: o flake8, sem config própria, usa o limite default de 79 colunas,
+# enquanto o black formata em 100. Isso gerava centenas de falsos E501 e
+# obrigava o CI a rodar o lint em modo "advisory" (continue-on-error).
+# Aqui igualamos o limite a 100 e ignoramos as duas regras que conflitam
+# com o estilo do black, deixando o lint confiável o suficiente para travar
+# o build.
+[flake8]
+max-line-length = 100
+
+# E203: espaço antes de ":" em slices — o black insere de propósito.
+# W503: quebra de linha antes de operador binário — estilo adotado pelo black.
+extend-ignore = E203, W503
+
+# Pastas que não devem ser analisadas (código de terceiros e gerado).
+exclude =
+    .git,
+    .venv,
+    __pycache__,
+    migrations,
+    build,
+    dist
+
+# Exceções por arquivo:
+# conftest.py precisa definir variáveis de ambiente (DATABASE_URL, SECRET_KEY)
+# ANTES de importar a app — por isso os imports não ficam no topo (E402 é
+# intencional e seguro aqui).
+per-file-ignores =
+    tests/conftest.py:E402

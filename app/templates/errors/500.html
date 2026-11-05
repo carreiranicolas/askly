@@ -1,7 +1,5 @@
-{% extends "layouts/base.html" %}
+{% extends "errors/_error_layout.html" %}
+{% set error_code = "500" %}
+{% set error_title = "Erro interno" %}
+{% set error_message = "Algo deu errado no servidor. Tente novamente em instantes ou contate o suporte." %}
 {% block title %}500 | Askly{% endblock %}
-{% block content %}
-  <h1 class="title">500</h1>
-  <p>Erro interno do servidor.</p>
-{% endblock %}
-

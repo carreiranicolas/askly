@@ -1,20 +1,7 @@
 {% extends "layouts/base.html" %}
 
 {% block body %}
-  <!-- Animated Mesh Background for Auth -->
-  <div class="askly-mesh-bg" aria-hidden="true">
-    <span class="askly-mesh-orb"></span>
-    <div class="askly-particles">
-      <span class="askly-particle"></span>
-      <span class="askly-particle"></span>
-      <span class="askly-particle"></span>
-      <span class="askly-particle"></span>
-      <span class="askly-particle"></span>
-      <span class="askly-particle"></span>
-    </div>
-  </div>
-
-  <div id="askly-page" class="askly-page">
+  <div id="askly-page" class="askly-page askly-page--auth">
     {% block content %}{% endblock %}
   </div>
 {% endblock %}

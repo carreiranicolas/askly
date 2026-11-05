@@ -1,0 +1,61 @@
+{% extends "layouts/app.html" %}
+{% block title %}Configurações | Askly{% endblock %}
+{% block page_title %}Configurações{% endblock %}
+
+{% block content %}
+  <div class="askly-card askly-stagger" style="margin-bottom: var(--ask-space-6); padding: var(--ask-space-6);">
+    <h3 style="font-size: var(--ask-text-sm); color: var(--ask-gray-500); text-transform: uppercase; letter-spacing: var(--ask-tracking-wide); margin-bottom: var(--ask-space-4); font-weight: 600;">Meus dados</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--ask-space-4);">
+      <div class="askly-field" style="margin-bottom: 0;">
+        <label class="askly-label">Nome</label>
+        <div class="askly-input-wrap">
+          <input class="askly-input askly-input--no-icon" type="text" value="{{ usuario.name }}" readonly />
+        </div>
+      </div>
+      <div class="askly-field" style="margin-bottom: 0;">
+        <label class="askly-label">E-mail</label>
+        <div class="askly-input-wrap">
+          <input class="askly-input askly-input--no-icon" type="email" value="{{ usuario.email }}" readonly />
+        </div>
+      </div>
+      <div class="askly-field" style="margin-bottom: 0;">
+        <label class="askly-label">Cargo</label>
+        <div class="askly-input-wrap">
+          <input class="askly-input askly-input--no-icon" type="text" value="{{ usuario.cargo.name if usuario.cargo else '—' }}" readonly />
+        </div>
+      </div>
+      <div class="askly-field" style="margin-bottom: 0;">
+        <label class="askly-label">Área</label>
+        <div class="askly-input-wrap">
+          <input class="askly-input askly-input--no-icon" type="text" value="{{ usuario.area.name if usuario.area else '—' }}" readonly />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="askly-card askly-stagger" style="padding: var(--ask-space-6);">
+    <h3 style="font-size: var(--ask-text-sm); color: var(--ask-gray-500); text-transform: uppercase; letter-spacing: var(--ask-tracking-wide); margin-bottom: var(--ask-space-4); font-weight: 600;">Trocar senha</h3>
+    <form method="post" action="{{ url_for('web_profile.alterar_senha') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div class="askly-field">
+        <label class="askly-label" for="current_password">Senha atual</label>
+        <div class="askly-input-wrap">
+          <input class="askly-input askly-input--no-icon" id="current_password" type="password" name="current_password" required />
+        </div>
+      </div>
+      <div class="askly-field">
+        <label class="askly-label" for="new_password">Nova senha</label>
+        <div class="askly-input-wrap">
+          <input class="askly-input askly-input--no-icon" id="new_password" type="password" name="new_password" minlength="6" required />
+        </div>
+      </div>
+      <div class="askly-field">
+        <label class="askly-label" for="confirm_new_password">Confirmar nova senha</label>
+        <div class="askly-input-wrap">
+          <input class="askly-input askly-input--no-icon" id="confirm_new_password" type="password" name="confirm_new_password" minlength="6" required />
+        </div>
+      </div>
+      <button class="askly-btn askly-btn--primary" type="submit">Alterar senha</button>
+    </form>
+  </div>
+{% endblock %}

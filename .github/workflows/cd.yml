@@ -1,0 +1,116 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: [CI]
+    branches: [main]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: cd-deploy
+  cancel-in-progress: true
+
+jobs:
+  build-and-push:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Metadados da imagem
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/asklyapp
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build e push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    if: ${{ needs.build-and-push.result == 'success' }}
+    runs-on: self-hosted
+
+    steps:
+      - name: Login no Docker Hub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Pull e docker run
+        env:
+          IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/asklyapp:latest
+          CONTAINER_NAME: ${{ vars.ASKLY_CONTAINER_NAME || 'askly_app' }}
+          APP_PORT: ${{ vars.APP_PORT || '8000' }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
+          POSTGRES_PORT: ${{ vars.POSTGRES_PORT || '5432' }}
+        run: |
+          set -euo pipefail
+
+          docker pull "$IMAGE"
+
+          docker stop "$CONTAINER_NAME" 2>/dev/null || true
+          docker rm "$CONTAINER_NAME" 2>/dev/null || true
+
+          docker run -d \
+            --name "$CONTAINER_NAME" \
+            --restart unless-stopped \
+            -p "${APP_PORT}:8000" \
+            --add-host=host.docker.internal:host-gateway \
+            -e SECRET_KEY="$SECRET_KEY" \
+            -e POSTGRES_USER="$POSTGRES_USER" \
+            -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+            -e POSTGRES_DB="$POSTGRES_DB" \
+            -e POSTGRES_HOST="$POSTGRES_HOST" \
+            -e POSTGRES_PORT="$POSTGRES_PORT" \
+            -e FLASK_APP=app \
+            -e FLASK_DEBUG=0 \
+            -e FORCE_HTTPS="${{ vars.FORCE_HTTPS || '1' }}" \
+            -e SESSION_COOKIE_SECURE="${{ vars.SESSION_COOKIE_SECURE || '1' }}" \
+            -e APP_TIMEZONE="${{ vars.APP_TIMEZONE || 'America/Sao_Paulo' }}" \
+            -e RATELIMIT_STORAGE_URI="${{ vars.RATELIMIT_STORAGE_URI || 'memory://' }}" \
+            -e GUNICORN_WORKERS="${{ vars.GUNICORN_WORKERS || '3' }}" \
+            "$IMAGE"
+
+          docker image prune -f
+
+      - name: Health check
+        env:
+          APP_PORT: ${{ vars.APP_PORT || '8000' }}
+          CONTAINER_NAME: ${{ vars.ASKLY_CONTAINER_NAME || 'askly_app' }}
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS "http://127.0.0.1:${APP_PORT}/health" >/dev/null; then
+              echo "Askly respondeu em /health"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Container subiu, mas /health não respondeu a tempo"
+          docker logs "$CONTAINER_NAME" || true
+          exit 1

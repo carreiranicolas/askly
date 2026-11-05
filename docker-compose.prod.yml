@@ -1,0 +1,63 @@
+# Produção — imagem: matheusbragasr71/asklyapp:latest (Docker Hub)
+#
+# 1) cp .env.example .env   (ajuste SECRET_KEY e POSTGRES_PASSWORD)
+# 2) docker compose -f docker-compose.prod.yml pull
+# 3) docker compose -f docker-compose.prod.yml up -d
+
+services:
+  db:
+    image: postgres:15
+    container_name: askly_postgres_prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-askly}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}
+      POSTGRES_DB: ${POSTGRES_DB:-askly_db}
+    volumes:
+      - askly_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U askly -d askly_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - askly_internal
+
+  app:
+    image: ${ASKLY_IMAGE:-matheusbragasr71/asklyapp:latest}
+    pull_policy: always
+    container_name: askly_app_prod
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      # Sobrescreve .env de dev — dentro do compose o host do Postgres é "db".
+      DATABASE_URL: ""
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER:-askly}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}
+      POSTGRES_DB: ${POSTGRES_DB:-askly_db}
+      SECRET_KEY: ${SECRET_KEY:?Defina SECRET_KEY no .env}
+      FLASK_APP: app
+      FLASK_DEBUG: "0"
+      FORCE_HTTPS: ${FORCE_HTTPS:-1}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-1}
+      APP_TIMEZONE: ${APP_TIMEZONE:-America/Sao_Paulo}
+      RATELIMIT_STORAGE_URI: ${RATELIMIT_STORAGE_URI:-memory://}
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-3}
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    networks:
+      - askly_internal
+
+networks:
+  askly_internal:
+    driver: bridge
+
+volumes:
+  askly_postgres_data:
+    driver: local

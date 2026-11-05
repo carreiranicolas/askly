@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "A web platform for managing orders and internal operations for small and medium-sized businesses."
 readme = "README.md"
 requires-python = ">=3.11"
-license = {file = "LICENSE"}
+license = {file = "LICENSE.txt"}
 authors = [
     {name = "Davi Dias D'Avila", email = "dddavila.dev@gmail.com"},
     {name = "Matheus Braga de Carvalho", email = "matheusbc1234@gmail.com"},
@@ -25,16 +25,15 @@ dependencies = [
     "Flask-Login>=0.6",
     "PyJWT>=2.8",
     "flask-restx>=1.3",
-    "flask-cors>=4.0",
     "Flask-WTF>=1.2",
     "WTForms>=3.1",
+    "wtforms-sqlalchemy>=0.3",
     "email-validator>=2.0",
-    "pydantic>=2.5",
     "Flask-Talisman>=1.1",
     "Flask-Limiter>=3.5",
-    "bcrypt>=4.1",
     "python-dotenv>=1.0",
     "python-dateutil>=2.8",
+    "gunicorn>=21.2",
 ]
 
 [project.optional-dependencies]
@@ -85,7 +84,28 @@ exclude = ["migrations", ".venv"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-v"
+# -v: saída verbosa (um teste por linha).
+# --cov=app: mede cobertura do pacote da aplicação.
+# --cov-report=term-missing: mostra, por arquivo, as linhas NÃO cobertas.
+# --cov-fail-under=80: trava a suíte (exit code != 0) se a cobertura cair
+#   abaixo de 80%. Hoje estamos em ~84%, então há margem; o gate impede
+#   regressões silenciosas de cobertura no CI.
+addopts = "-v --cov=app --cov-report=term-missing --cov-fail-under=80"
+
+[tool.coverage.run]
+# Mede só o código da aplicação; migrations são geradas/versionadas pelo
+# Alembic e não fazem parte do alvo de testes.
+source = ["app"]
+omit = ["*/migrations/*"]
+
+[tool.coverage.report]
+# Linhas que não precisam contar como "descobertas" (guardas defensivas e
+# blocos só de tipagem estática, que não rodam em runtime).
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]
 
 [tool.setuptools]
 include-package-data = true
@@ -96,9 +116,4 @@ namespaces = true
 exclude = ["tests*", "docs*"]
 
 [tool.setuptools.package-data]
-"*" = ["*.html", "*.css", "*.js", "*.json", "*.png", "*.jpg"]
-"views" = ["templates/*", "static/*"]
-
-[tool.askly]
-display_name = "Askly"
-company = "Askly INC"
+"app" = ["templates/**/*", "static/**/*"]

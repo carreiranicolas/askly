@@ -1,54 +1,386 @@
 {% extends "layouts/app.html" %}
 {% block title %}Chamado #{{ chamado.id }} | Askly{% endblock %}
 
-{% block page_title %}{{ chamado.titulo }}{% endblock %}
+{% block page_title %}{{ chamado.title }}{% endblock %}
 {% block page_actions %}
-  <span class="askly-badge askly-badge--{{ 'info' if chamado.status.name == 'ABERTO' else ('warning' if chamado.status.name == 'EM_ANDAMENTO' else 'success') }}" style="font-size: var(--ask-text-sm); padding: var(--ask-space-2) var(--ask-space-4);">
-    {{ chamado.status_display }}
+  <span class="askly-kbd" style="font-size: var(--ask-text-sm); padding: var(--ask-space-2) var(--ask-space-3);">Chamado #{{ chamado.id }}</span>
+  <span class="askly-badge askly-badge--{{ 'success' if chamado.status.name == 'EM_ABERTO' else ('warning' if chamado.status.name == 'EM_ANDAMENTO' else 'danger') }}" style="font-size: var(--ask-text-sm); padding: var(--ask-space-2) var(--ask-space-4);">
+    {{ chamado.status.value }}
   </span>
   <a class="askly-btn askly-btn--secondary" href="{{ url_for('web_tickets.listar') }}">
     Voltar
   </a>
 {% endblock %}
 
+{% block extra_css %}
+<style>
+  .ticket-header-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ask-space-4);
+    margin-bottom: var(--ask-space-6);
+  }
+
+  .ticket-info-pill {
+    display: flex;
+    align-items: center;
+    gap: var(--ask-space-2);
+    padding: var(--ask-space-3) var(--ask-space-4);
+    border-radius: var(--ask-radius-full);
+    background: var(--ask-surface);
+    border: 1px solid var(--ask-border);
+    font-size: var(--ask-text-sm);
+    font-weight: 600;
+  }
+
+  .ticket-info-pill svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  .ticket-info-pill--priority-alta,
+  .ticket-info-pill--priority-critica {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.25);
+    color: var(--ask-danger);
+  }
+
+  .ticket-info-pill--priority-media {
+    background: rgba(245, 158, 11, 0.08);
+    border-color: rgba(245, 158, 11, 0.25);
+    color: var(--ask-warning);
+  }
+
+  .ticket-info-pill--sla-ok {
+    background: rgba(16, 185, 129, 0.08);
+    border-color: rgba(16, 185, 129, 0.25);
+    color: var(--ask-success);
+  }
+
+  .ticket-info-pill--sla-warning {
+    background: rgba(245, 158, 11, 0.08);
+    border-color: rgba(245, 158, 11, 0.25);
+    color: var(--ask-warning);
+  }
+
+  .ticket-info-pill--sla-danger {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.25);
+    color: var(--ask-danger);
+  }
+
+  .ticket-info-pill--area {
+    background: rgba(14, 165, 233, 0.08);
+    border-color: rgba(14, 165, 233, 0.25);
+    color: var(--ask-sky-600);
+  }
+
+  .ticket-info-pill--assignee {
+    background: rgba(13, 148, 136, 0.08);
+    border-color: rgba(13, 148, 136, 0.25);
+    color: var(--ask-teal-600);
+  }
+
+  .ticket-info-pill--assignee-pending {
+    background: rgba(245, 158, 11, 0.08);
+    border-color: rgba(245, 158, 11, 0.25);
+    color: var(--ask-warning);
+  }
+
+  .ticket-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: var(--ask-space-6);
+    align-items: start;
+  }
+
+  @media (max-width: 900px) {
+    .ticket-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .ticket-section-title {
+    font-size: var(--ask-text-sm);
+    color: var(--ask-gray-500);
+    text-transform: uppercase;
+    letter-spacing: var(--ask-tracking-wide);
+    margin-bottom: var(--ask-space-4);
+    font-weight: 600;
+  }
+
+  /* Timeline */
+  .ticket-timeline {
+    position: relative;
+    padding-left: var(--ask-space-8);
+  }
+
+  .ticket-timeline::before {
+    content: '';
+    position: absolute;
+    left: 11px;
+    top: 4px;
+    bottom: 4px;
+    width: 2px;
+    background: var(--ask-border);
+    border-radius: 1px;
+  }
+
+  .timeline-item {
+    position: relative;
+    padding-bottom: var(--ask-space-5);
+  }
+
+  .timeline-item:last-child {
+    padding-bottom: 0;
+  }
+
+  .timeline-dot {
+    position: absolute;
+    left: calc(-1 * var(--ask-space-8) + 4px);
+    top: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--ask-surface);
+    border: 2px solid var(--ask-gray-300);
+  }
+
+  .timeline-item--current .timeline-dot {
+    border-color: var(--ask-teal-500);
+    background: var(--ask-teal-500);
+  }
+
+  .timeline-item--open .timeline-dot {
+    border-color: var(--ask-sky-500);
+    background: var(--ask-sky-500);
+  }
+
+  .timeline-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .timeline-title {
+    font-size: var(--ask-text-sm);
+    font-weight: 600;
+    color: var(--ask-gray-900);
+  }
+
+  .timeline-meta {
+    font-size: var(--ask-text-xs);
+    color: var(--ask-gray-500);
+  }
+
+  .timeline-detail {
+    font-size: var(--ask-text-xs);
+    color: var(--ask-gray-600);
+    margin-top: 2px;
+  }
+
+  /* Comentários */
+  .comment {
+    display: flex;
+    gap: var(--ask-space-3);
+  }
+
+  .comment-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: var(--ask-text-xs);
+    flex-shrink: 0;
+  }
+
+  .comment-avatar--requester {
+    background: var(--ask-gradient-brand);
+    color: var(--ask-on-brand);
+  }
+
+  .comment-avatar--staff {
+    background: var(--ask-sky-500);
+    color: #ffffff;
+    box-shadow: 0 0 0 2px var(--ask-surface), 0 0 0 4px var(--ask-sky-500);
+  }
+
+  .comment-body {
+    flex: 1;
+    background: var(--ask-surface-sunken);
+    border: 1px solid var(--ask-border);
+    border-radius: var(--ask-radius-lg);
+    padding: var(--ask-space-3) var(--ask-space-4);
+  }
+
+  .comment--staff .comment-body {
+    background: rgba(14, 165, 233, 0.06);
+    border-color: rgba(14, 165, 233, 0.2);
+  }
+
+  .comment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--ask-space-1);
+  }
+
+  .comment-author {
+    font-size: var(--ask-text-sm);
+    font-weight: 600;
+    color: var(--ask-gray-900);
+  }
+
+  .comment-badge {
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: var(--ask-radius-full);
+    background: var(--ask-sky-500);
+    color: #ffffff;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .comment-time {
+    font-size: var(--ask-text-xs);
+    color: var(--ask-gray-500);
+  }
+
+  .comment-text {
+    font-size: var(--ask-text-sm);
+    color: var(--ask-gray-800);
+    line-height: var(--ask-leading-relaxed);
+    white-space: pre-wrap;
+  }
+
+  /* Quick actions */
+  .quick-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ask-space-2);
+    width: 100%;
+    padding: var(--ask-space-3);
+    border: 1.5px dashed var(--ask-teal-500);
+    border-radius: var(--ask-radius-md);
+    background: rgba(13, 148, 136, 0.04);
+    color: var(--ask-teal-600);
+    font-size: var(--ask-text-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--ask-duration-fast) var(--ask-ease-out);
+  }
+
+  .quick-action-btn:hover {
+    background: rgba(13, 148, 136, 0.10);
+    border-style: solid;
+  }
+
+  .quick-action-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-  <div style="display: grid; grid-template-columns: 1fr 320px; gap: var(--ask-space-8); align-items: start;" class="askly-stagger">
-    
+  {# Colega da área do chamado (não quem abriu) aparece como equipe #}
+  {% set ticket_area_id = chamado.category_id %}
+
+  <!-- ─── Barra de Informações Rápidas ──────────────────────── -->
+  <div class="ticket-header-bar askly-stagger">
+    <!-- Prioridade -->
+    {% set prio_class = 'critica' if chamado.priority.name == 'Crítica' else ('alta' if chamado.priority.name == 'Alta' else ('media' if chamado.priority.name == 'Média' else 'default')) %}
+    <div class="ticket-info-pill ticket-info-pill--priority-{{ prio_class }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      {{ chamado.priority.name }}
+    </div>
+
+    <!-- SLA -->
+    {% if sla_remaining %}
+      {% set sla_class = 'danger' if sla_overdue else ('warning' if 'Faltam' in sla_remaining and ('1h' in sla_remaining or '2h' in sla_remaining or 'min' in sla_remaining) else 'ok') %}
+      <div class="ticket-info-pill ticket-info-pill--sla-{{ sla_class }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        {{ sla_remaining }}
+      </div>
+    {% endif %}
+
+    <!-- Área -->
+    <div class="ticket-info-pill ticket-info-pill--area">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+      {{ chamado.category.name if chamado.category else '—' }}
+    </div>
+
+    <!-- Responsável -->
+    <div class="ticket-info-pill {{ 'ticket-info-pill--assignee' if chamado.assignee else 'ticket-info-pill--assignee-pending' }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+      </svg>
+      {% if chamado.assignee %}
+        {{ chamado.assignee.name }}
+      {% else %}
+        Não atribuído
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="ticket-grid askly-stagger">
     <!-- ─── Esquerda: Conteúdo Principal ──────────────────────── -->
-    <div style="display: flex; flex-direction: column; gap: var(--ask-space-8);">
-      
+    <div style="display: flex; flex-direction: column; gap: var(--ask-space-6);">
+
       <!-- Descrição -->
-      <div class="askly-card" style="padding: var(--ask-space-8);">
-        <h3 style="font-size: var(--ask-text-sm); color: var(--ask-gray-500); text-transform: uppercase; letter-spacing: var(--ask-tracking-wide); margin-bottom: var(--ask-space-4); font-weight: 600;">Descrição do Chamado</h3>
-        <div style="color: var(--ask-gray-800); line-height: var(--ask-leading-relaxed); white-space: pre-wrap;">{{ chamado.descricao }}</div>
+      <div class="askly-card" style="padding: var(--ask-space-6);">
+        <h3 class="ticket-section-title">Descrição</h3>
+        <div style="color: var(--ask-gray-800); line-height: var(--ask-leading-relaxed); white-space: pre-wrap;">{{ chamado.description }}</div>
       </div>
 
       <!-- Comentários -->
-      <div class="askly-card" style="padding: var(--ask-space-8);">
-        <h3 style="font-size: var(--ask-text-sm); color: var(--ask-gray-500); text-transform: uppercase; letter-spacing: var(--ask-tracking-wide); margin-bottom: var(--ask-space-6); font-weight: 600;">Comentários</h3>
-        
-        <form method="post" action="{{ url_for('web_tickets.adicionar_comentario', id=chamado.id) }}" style="margin-bottom: var(--ask-space-8);">
+      <div class="askly-card" style="padding: var(--ask-space-6);">
+        <h3 class="ticket-section-title">Comentários</h3>
+
+        <form method="post" action="{{ url_for('web_tickets.adicionar_comentario', id=chamado.id) }}" style="margin-bottom: var(--ask-space-6);">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
           <div class="askly-field">
-            <div class="askly-input-wrap">
-              <textarea class="askly-input" name="conteudo" rows="3" placeholder="Adicionar um comentário..." required style="background: var(--ask-gray-50);"></textarea>
-            </div>
+            <textarea class="askly-input askly-input--no-icon" name="content" rows="3" placeholder="Escreva um comentário..." required style="height: auto; min-height: 80px; padding: var(--ask-space-3); line-height: var(--ask-leading-normal); resize: vertical;"></textarea>
           </div>
-          <button class="askly-btn askly-btn--primary" type="submit">Enviar Comentário</button>
+          <button class="askly-btn askly-btn--primary" type="submit" style="width: auto;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+            Enviar
+          </button>
         </form>
 
-        <div style="display: flex; flex-direction: column; gap: var(--ask-space-6);">
+        <div style="display: flex; flex-direction: column; gap: var(--ask-space-4);">
           {% for c in comentarios %}
-            <div style="display: flex; gap: var(--ask-space-4);">
-              <div class="askly-user-avatar" style="width: 40px; height: 40px; flex-shrink: 0;">
-                {{ c.autor_nome[:1].upper() if c.autor_nome else 'U' }}
+            {% set is_area_peer = c.author and c.author.area_id == ticket_area_id and c.author_id != chamado.requester_id %}
+            <div class="comment {{ 'comment--staff' if is_area_peer }}">
+              <div class="comment-avatar {{ 'comment-avatar--staff' if is_area_peer else 'comment-avatar--requester' }}">
+                {{ c.author.name[:1].upper() if c.author else 'U' }}
               </div>
-              <div style="background: var(--ask-gray-50); border: 1px solid var(--ask-gray-200); border-radius: var(--ask-radius-lg); padding: var(--ask-space-4); flex: 1;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: var(--ask-space-2);">
-                  <strong style="font-size: var(--ask-text-sm); color: var(--ask-gray-900);">{{ c.autor_nome or 'Usuário' }}</strong>
-                  <span style="font-size: var(--ask-text-xs); color: var(--ask-gray-500);">{{ c.criado_em.strftime('%d/%m/%Y às %H:%M') }}</span>
+              <div class="comment-body">
+                <div class="comment-header">
+                  <div style="display: flex; align-items: center; gap: var(--ask-space-2);">
+                    <span class="comment-author">{{ c.author.name if c.author else 'Usuário' }}</span>
+                    {% if is_area_peer %}
+                      <span class="comment-badge">Equipe</span>
+                    {% endif %}
+                  </div>
+                  <span class="comment-time">{{ c.created_at | local('%d/%m às %H:%M') }}</span>
                 </div>
-                <div style="color: var(--ask-gray-800); font-size: var(--ask-text-sm); white-space: pre-wrap;">{{ c.conteudo }}</div>
+                <div class="comment-text">{{ c.content }}</div>
               </div>
             </div>
           {% else %}
@@ -57,127 +389,157 @@
         </div>
       </div>
 
-      <!-- Histórico de Status -->
-      <div class="askly-card" style="padding: var(--ask-space-8);">
-        <h3 style="font-size: var(--ask-text-sm); color: var(--ask-gray-500); text-transform: uppercase; letter-spacing: var(--ask-tracking-wide); margin-bottom: var(--ask-space-6); font-weight: 600;">Histórico do Chamado</h3>
-        <div class="askly-table-wrapper">
-          <table class="askly-table">
-            <thead>
-              <tr>
-                <th>Data</th>
-                <th>Ação</th>
-                <th>Usuário</th>
-                <th>Detalhes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for h in historico %}
-                <tr>
-                  <td>{{ h.alterado_em }}</td>
-                  <td><span class="askly-badge askly-badge--neutral">{{ h.status_novo }}</span></td>
-                  <td>{{ h.alterado_por }}</td>
-                  <td>{{ h.motivo or '-' }}</td>
-                </tr>
-              {% else %}
-                <tr><td colspan="4" class="askly-text-center">Nenhum histórico registrado.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
+      <!-- Timeline / Histórico -->
+      <div class="askly-card" style="padding: var(--ask-space-6);">
+        <h3 class="ticket-section-title">Histórico</h3>
+        <div class="ticket-timeline">
+          <!-- Abertura do chamado (sempre mostra) -->
+          <div class="timeline-item timeline-item--open">
+            <span class="timeline-dot"></span>
+            <div class="timeline-content">
+              <span class="timeline-title">Chamado aberto</span>
+              <span class="timeline-meta">{{ chamado.created_at | local('%d/%m/%Y às %H:%M') }} · {{ chamado.requester.name if chamado.requester else '?' }}</span>
+            </div>
+          </div>
+
+          {% for h in historico %}
+            <div class="timeline-item {{ 'timeline-item--current' if loop.last }}">
+              <span class="timeline-dot"></span>
+              <div class="timeline-content">
+                <span class="timeline-title">{{ h.new_status }}</span>
+                <span class="timeline-meta">{{ h.created_at | local('%d/%m/%Y às %H:%M') }}{% if h.changed_by %} · {{ h.changed_by.name }}{% endif %}</span>
+                {% if h.motivo %}
+                  <span class="timeline-detail">"{{ h.motivo }}"</span>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
         </div>
       </div>
     </div>
 
-    <!-- ─── Direita: Sidebar do Chamado ─────────────────────── -->
-    <div style="display: flex; flex-direction: column; gap: var(--ask-space-6);">
-      
-      <!-- Metadados -->
-      <div class="askly-card" style="padding: var(--ask-space-6);">
-        <h3 style="font-size: var(--ask-text-sm); color: var(--ask-gray-500); text-transform: uppercase; letter-spacing: var(--ask-tracking-wide); margin-bottom: var(--ask-space-4); font-weight: 600;">Detalhes</h3>
-        
-        <div style="display: flex; flex-direction: column; gap: var(--ask-space-4);">
-          <div>
-            <span style="font-size: var(--ask-text-xs); color: var(--ask-gray-500); display: block; margin-bottom: var(--ask-space-1);">Criado por</span>
-            <div style="display: flex; align-items: center; gap: var(--ask-space-2);">
-              <div class="askly-user-avatar" style="width: 24px; height: 24px; font-size: 10px;">{{ chamado.criador_nome[:1].upper() if chamado.criador_nome else '?' }}</div>
-              <strong style="font-size: var(--ask-text-sm); color: var(--ask-gray-900);">{{ chamado.criador_nome }}</strong>
-            </div>
-          </div>
-          
-          <div>
-            <span style="font-size: var(--ask-text-xs); color: var(--ask-gray-500); display: block; margin-bottom: var(--ask-space-1);">Responsável</span>
-            {% if chamado.atribuido_nome %}
-              <div style="display: flex; align-items: center; gap: var(--ask-space-2);">
-                <div class="askly-user-avatar" style="width: 24px; height: 24px; font-size: 10px; background: var(--ask-sky-500);">{{ chamado.atribuido_nome[:1].upper() }}</div>
-                <strong style="font-size: var(--ask-text-sm); color: var(--ask-gray-900);">{{ chamado.atribuido_nome }}</strong>
-              </div>
-            {% else %}
-              <span style="font-size: var(--ask-text-sm); color: var(--ask-gray-500); font-style: italic;">Não atribuído</span>
-            {% endif %}
-          </div>
-          
-          <div>
-            <span style="font-size: var(--ask-text-xs); color: var(--ask-gray-500); display: block; margin-bottom: var(--ask-space-1);">Prioridade</span>
-            <span class="askly-badge askly-badge--{{ 'danger' if chamado.prioridade.name == 'ALTA' else ('warning' if chamado.prioridade.name == 'MEDIA' else 'neutral') }}">{{ chamado.prioridade_display }}</span>
-          </div>
+    <!-- ─── Direita: Ações do Chamado ───────────────────────── -->
+    <div style="display: flex; flex-direction: column; gap: var(--ask-space-5);">
 
-          <div>
-            <span style="font-size: var(--ask-text-xs); color: var(--ask-gray-500); display: block; margin-bottom: var(--ask-space-1);">Categoria</span>
-            <span style="font-size: var(--ask-text-sm); color: var(--ask-gray-900); font-weight: 500;">{{ chamado.categoria_nome or '-' }}</span>
-          </div>
+      {% if pode_cancelar %}
+        <div class="askly-card" style="padding: var(--ask-space-5);">
+          <h3 class="ticket-section-title">Cancelar chamado</h3>
+          <p>Disponível enquanto o atendimento não tiver sido iniciado. O chamado será excluído.</p>
+          <form method="post" action="{{ url_for('web_tickets.cancelar', id=chamado.id) }}" onsubmit="return confirm('Cancelar e excluir este chamado? Esta ação não pode ser desfeita.')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button class="askly-btn askly-btn--danger" type="submit">Cancelar e excluir</button>
+          </form>
         </div>
-      </div>
+      {% endif %}
 
-      <!-- Ações: Alterar Status -->
-      {% if chamado.transicoes_disponiveis %}
-        <div class="askly-card" style="padding: var(--ask-space-6);">
-          <h3 style="font-size: var(--ask-text-sm); color: var(--ask-gray-500); text-transform: uppercase; letter-spacing: var(--ask-tracking-wide); margin-bottom: var(--ask-space-4); font-weight: 600;">Alterar Status</h3>
+      <!-- Passo 1 — Atribuição (membros da área do chamado) -->
+      {% if pode_gerir %}
+        <div class="askly-card" style="padding: var(--ask-space-5);{{ ' border-color: var(--ask-teal-500); border-width: 2px;' if not chamado.assignee }}">
+          <h3 class="ticket-section-title">Responsável</h3>
+          {% if colegas_area %}
+            <!-- Botão rápido: Assumir para mim -->
+            {% set user_in_list = current_user.id in (colegas_area | map(attribute='id') | list) %}
+            {% if user_in_list and (not chamado.assignee or chamado.assignee_id != current_user.id) %}
+              <form method="post" action="{{ url_for('web_tickets.atribuir', id=chamado.id) }}" style="margin-bottom: var(--ask-space-4);">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <input type="hidden" name="atendente_id" value="{{ current_user.id }}" />
+                <button type="submit" class="quick-action-btn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                    <line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/>
+                  </svg>
+                  Assumir para mim
+                </button>
+              </form>
+            {% endif %}
+
+            <form method="post" action="{{ url_for('web_tickets.atribuir', id=chamado.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <div class="askly-field">
+                <select class="askly-input askly-input--no-icon" name="atendente_id" required style="font-size: var(--ask-text-sm);">
+                  <option value="" disabled {{ 'selected' if not chamado.assignee }}>Selecionar...</option>
+                  {% for a in colegas_area %}
+                    <option value="{{ a.id }}" {{ 'selected' if chamado.assignee_id == a.id }}>{{ a.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <button class="askly-btn askly-btn--secondary" type="submit" style="width: 100%; justify-content: center; font-size: var(--ask-text-sm);">
+                {{ 'Atribuir' if not chamado.assignee else 'Reatribuir' }}
+              </button>
+            </form>
+          {% else %}
+            <p style="font-size: var(--ask-text-sm); color: var(--ask-gray-500); line-height: var(--ask-leading-normal);">
+              Nenhum usuário na área <strong>{{ chamado.category.name if chamado.category else '—' }}</strong>.
+            </p>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <!-- Status do chamado -->
+      {% if status_options %}
+        <div class="askly-card" style="padding: var(--ask-space-5);">
+          <h3 class="ticket-section-title">Alterar Status</h3>
+
           <form method="post" action="{{ url_for('web_tickets.alterar_status', id=chamado.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            
+
             <div class="askly-field">
-              <div class="askly-input-wrap">
-                <select class="askly-input" name="status" required>
-                  <option value="" disabled selected>Selecionar status...</option>
-                  {% for s in chamado.transicoes_disponiveis %}
-                    <option value="{{ s }}">{{ s }}</option>
-                  {% endfor %}
-                </select>
-              </div>
+              <select class="askly-input askly-input--no-icon" name="status" required style="font-size: var(--ask-text-sm);">
+                <option value="" disabled selected>Selecionar...</option>
+                {% for s in status_options %}
+                  <option value="{{ s.name }}">{{ s.value }}</option>
+                {% endfor %}
+              </select>
             </div>
 
             <div class="askly-field">
-              <div class="askly-input-wrap">
-                <input class="askly-input" type="text" name="motivo" placeholder="Motivo (opcional)" />
-              </div>
+              <input class="askly-input askly-input--no-icon" type="text" name="motivo" placeholder="Motivo (opcional)" maxlength="255" style="font-size: var(--ask-text-sm);" />
             </div>
 
-            <button class="askly-btn askly-btn--primary" type="submit" style="width: 100%; justify-content: center;">Atualizar Status</button>
+            <button class="askly-btn askly-btn--primary" type="submit" style="width: 100%; justify-content: center; font-size: var(--ask-text-sm);">
+              Atualizar
+            </button>
           </form>
         </div>
       {% endif %}
 
-      <!-- Ações: Atribuir -->
-      {% if atendentes %}
-        <div class="askly-card" style="padding: var(--ask-space-6);">
-          <h3 style="font-size: var(--ask-text-sm); color: var(--ask-gray-500); text-transform: uppercase; letter-spacing: var(--ask-tracking-wide); margin-bottom: var(--ask-space-4); font-weight: 600;">Atribuição</h3>
-          <form method="post" action="{{ url_for('web_tickets.atribuir', id=chamado.id) }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <div class="askly-field">
-              <div class="askly-input-wrap">
-                <select class="askly-input" name="atendente_id" required>
-                  <option value="" disabled selected>Selecionar atendente...</option>
-                  {% for a in atendentes %}
-                    <option value="{{ a.id }}">{{ a.nome }}</option>
-                  {% endfor %}
-                </select>
-              </div>
+      <!-- Metadados / Detalhes -->
+      <div class="askly-card" style="padding: var(--ask-space-5);">
+        <h3 class="ticket-section-title">Detalhes</h3>
+
+        <div style="display: flex; flex-direction: column; gap: var(--ask-space-3); font-size: var(--ask-text-sm);">
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--ask-gray-500);">Nº</span>
+            <span class="askly-kbd" style="font-size: var(--ask-text-xs);">#{{ chamado.id }}</span>
+          </div>
+
+          <div><strong>Data:</strong> {{ chamado.reported_date.strftime('%d/%m/%Y') }}</div>
+          <div><strong>Setor:</strong> {{ chamado.category.name }}</div>
+          <div><strong>Nome do item:</strong> {{ chamado.item_name }}</div>
+          <div><strong>Número da etiqueta:</strong> {{ chamado.equipment_tag }}</div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: var(--ask-gray-500);">Criado por</span>
+            <div style="display: flex; align-items: center; gap: var(--ask-space-2);">
+              <div class="askly-user-avatar" style="width: 20px; height: 20px; font-size: 9px;">{{ chamado.requester.name[:1].upper() if chamado.requester else '?' }}</div>
+              <span style="color: var(--ask-gray-900); font-weight: 500;">{{ chamado.requester.name if chamado.requester else '?' }}</span>
             </div>
-            <button class="askly-btn askly-btn--secondary" type="submit" style="width: 100%; justify-content: center;">Atribuir Responsável</button>
-          </form>
+          </div>
+
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--ask-gray-500);">Aberto em</span>
+            <span style="color: var(--ask-gray-800);">{{ chamado.created_at | local('%d/%m/%Y %H:%M') }}</span>
+          </div>
+
+          {% if sla_deadline %}
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--ask-gray-500);">Prazo SLA</span>
+              <span style="color: {{ 'var(--ask-danger)' if sla_overdue else 'var(--ask-gray-800)' }};">{{ sla_deadline | local('%d/%m/%Y %H:%M') }}</span>
+            </div>
+          {% endif %}
         </div>
-      {% endif %}
+      </div>
 
     </div>
   </div>
 {% endblock %}
-

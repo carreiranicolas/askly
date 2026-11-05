@@ -1,0 +1,14 @@
+{% extends "layouts/base.html" %}
+{% block body %}
+  <div id="askly-page" class="askly-page askly-page--error">
+    <div class="askly-error askly-stagger">
+      <p class="askly-error__code" aria-hidden="true">{{ error_code }}</p>
+      <h1 class="askly-error__title">{{ error_title }}</h1>
+      <p class="askly-error__message">{{ error_message }}</p>
+      <div class="askly-error__actions">
+        <a class="askly-btn askly-btn--primary" href="{{ url_for('web_tickets.listar') }}">Ir para chamados</a>
+        <a class="askly-btn askly-btn--ghost" href="{{ url_for('web_auth.login') }}">Fazer login</a>
+      </div>
+    </div>
+  </div>
+{% endblock %}

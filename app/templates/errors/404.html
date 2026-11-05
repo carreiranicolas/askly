@@ -1,7 +1,5 @@
-{% extends "layouts/base.html" %}
+{% extends "errors/_error_layout.html" %}
+{% set error_code = "404" %}
+{% set error_title = "Página não encontrada" %}
+{% set error_message = "O endereço pode estar incorreto ou o conteúdo foi removido." %}
 {% block title %}404 | Askly{% endblock %}
-{% block content %}
-  <h1 class="title">404</h1>
-  <p>Página não encontrada.</p>
-{% endblock %}
-

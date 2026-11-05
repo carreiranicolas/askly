@@ -1,7 +1,5 @@
-{% extends "layouts/base.html" %}
+{% extends "errors/_error_layout.html" %}
+{% set error_code = "400" %}
+{% set error_title = "Requisição inválida" %}
+{% set error_message = "Os dados enviados não puderam ser processados. Verifique o formulário e tente novamente." %}
 {% block title %}400 | Askly{% endblock %}
-{% block content %}
-  <h1 class="title">400</h1>
-  <p>Requisição inválida.</p>
-{% endblock %}
-

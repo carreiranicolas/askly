@@ -1,9 +1,12 @@
 {% extends "layouts/base.html" %}
 
 {% block body %}
-  <div class="askly-app-layout">
+  <div class="askly-app-layout askly-has-sidebar-toggle">
+    <!-- Overlay para mobile -->
+    <div class="askly-sidebar-overlay" id="sidebar-overlay"></div>
+
     <!-- Sidebar -->
-    <aside class="askly-sidebar">
+    <aside class="askly-sidebar" id="sidebar">
       <div class="askly-sidebar-header">
         <a href="{{ url_for('web_tickets.listar') }}" class="askly-sidebar-brand">
           <img src="{{ url_for('static', filename='img/askly-icon.png') }}" alt="Askly Logo" class="askly-sidebar-logo" />
@@ -12,20 +15,45 @@
       </div>
 
       <nav class="askly-sidebar-nav">
-        <div class="askly-nav-divider" style="margin-top: 0;">Meus Chamados</div>
-        <a href="{{ url_for('web_tickets.listar', tipo='meus') }}" class="askly-nav-item {{ 'is-active' if request.endpoint == 'web_tickets.listar' and request.args.get('tipo') == 'meus' else '' }}">
+        {% set is_admin = current_user.is_authenticated and current_user.cargo.name == 'Admin' %}
+        <a href="{{ url_for('web_dashboard.index') }}" class="askly-nav-item {{ 'is-active' if request.endpoint == 'web_dashboard.index' else '' }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="9"></rect>
+            <rect x="14" y="3" width="7" height="5"></rect>
+            <rect x="14" y="12" width="7" height="9"></rect>
+            <rect x="3" y="16" width="7" height="5"></rect>
+          </svg>
+          Dashboard
+        </a>
+        {% if is_admin %}
+        <a href="{{ url_for('web_dashboard.sla') }}" class="askly-nav-item {{ 'is-active' if request.endpoint == 'web_dashboard.sla' else '' }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="13" r="8"></circle>
+            <path d="M12 9v4l2 2"></path>
+            <path d="M5 3 2 6"></path>
+            <path d="m22 6-3-3"></path>
+          </svg>
+          SLA &amp; Métricas
+        </a>
+        {% endif %}
+
+        {# `categoria` permanece aceito para bookmarks antigos. #}
+        {% set _cat_arg = request.args.get('categoria_id') or request.args.get('categoria') %}
+        <div class="askly-nav-divider">Meus Chamados</div>
+        <a href="{{ url_for('web_tickets.listar', tipo='meus') }}" class="askly-nav-item {{ 'is-active' if request.endpoint == 'web_tickets.listar' and (request.args.get('tipo') == 'meus' or (not is_admin and not _cat_arg)) else '' }}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
           </svg>
           Chamados que abri
         </a>
+        {% if is_admin %}
         <a href="{{ url_for('web_tickets.listar', tipo='atribuidos') }}" class="askly-nav-item {{ 'is-active' if request.endpoint == 'web_tickets.listar' and request.args.get('tipo') == 'atribuidos' else '' }}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
           </svg>
           Atribuídos a mim
         </a>
-        <a href="{{ url_for('web_tickets.listar') }}" class="askly-nav-item {{ 'is-active' if request.endpoint == 'web_tickets.listar' and not request.args.get('tipo') and not request.args.get('categoria') else '' }}">
+        <a href="{{ url_for('web_tickets.listar') }}" class="askly-nav-item {{ 'is-active' if request.endpoint == 'web_tickets.listar' and not request.args.get('tipo') and not _cat_arg else '' }}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="7" height="7"></rect>
             <rect x="14" y="3" width="7" height="7"></rect>
@@ -34,17 +62,23 @@
           </svg>
           Todos os chamados
         </a>
+        {% endif %}
 
+        {# Admin enxerga todas as áreas; demais usuários, apenas a própria. #}
+        {% set sidebar_areas = get_categorias() if is_admin else ([current_user.area] if (current_user.is_authenticated and current_user.area) else []) %}
+
+        {% if sidebar_areas %}
         <div class="askly-nav-divider">Áreas</div>
-        {% for cat in get_categorias() %}
-          <a href="{{ url_for('web_tickets.listar', categoria=cat.id) }}" class="askly-nav-item {{ 'is-active' if request.endpoint == 'web_tickets.listar' and request.args.get('categoria') == cat.id|string else '' }}">
-            <span style="width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; opacity: 0.7;">#</span>
-            {{ cat.nome }}
+        {% for cat in sidebar_areas %}
+          <a href="{{ url_for('web_tickets.listar', categoria_id=cat.id) }}" class="askly-nav-item {{ 'is-active' if request.endpoint == 'web_tickets.listar' and _cat_arg == cat.id|string else '' }}">
+            <span class="askly-nav-hash" aria-hidden="true">#</span>
+            {{ cat.name }}
           </a>
         {% endfor %}
-        
+        {% endif %}
+
         <!-- Only for Admin users -->
-        {% if current_user and current_user.perfil.name == 'ADMIN' %}
+        {% if is_admin %}
         <div class="askly-nav-divider">Administração</div>
         <a href="{{ url_for('web_admin.categorias') }}" class="askly-nav-item {{ 'is-active' if request.endpoint == 'web_admin.categorias' else '' }}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -55,7 +89,7 @@
             <line x1="3" y1="12" x2="3.01" y2="12"></line>
             <line x1="3" y1="18" x2="3.01" y2="18"></line>
           </svg>
-          Categorias
+          Áreas
         </a>
         <a href="{{ url_for('web_admin.usuarios') }}" class="askly-nav-item {{ 'is-active' if request.endpoint == 'web_admin.usuarios' else '' }}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -68,29 +102,6 @@
         </a>
         {% endif %}
       </nav>
-
-      <div class="askly-sidebar-footer">
-        <div class="askly-user-info">
-          <div class="askly-user-avatar">
-            {{ current_user.nome[:1].upper() if current_user else '?' }}
-          </div>
-          <div class="askly-user-details">
-            <span class="askly-user-name">{{ current_user.nome if current_user else 'Usuário' }}</span>
-            <span class="askly-user-role">{{ current_user.perfil.value if current_user else '' }}</span>
-          </div>
-        </div>
-        <form method="post" action="{{ url_for('web_auth.logout') }}" style="width: 100%;">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <button type="submit" class="askly-nav-item askly-nav-logout" style="width: 100%; text-align: left; background: none; border: none; cursor: pointer;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <polyline points="16 17 21 12 16 7"></polyline>
-              <line x1="21" y1="12" x2="9" y2="12"></line>
-            </svg>
-            Sair
-          </button>
-        </form>
-      </div>
     </aside>
 
     <!-- Main Content -->
@@ -110,9 +121,83 @@
         </div>
         
         <header class="askly-app-header">
+          <button type="button" class="askly-menu-toggle" id="menu-toggle" aria-label="Abrir menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
           <h1 class="askly-app-title">{% block page_title %}{% endblock %}</h1>
-          <div class="askly-app-actions">
-            {% block page_actions %}{% endblock %}
+          <div class="askly-app-header-right">
+            <div class="askly-app-actions">
+              {% block page_actions %}{% endblock %}
+            </div>
+
+            <details class="askly-user-menu">
+              <summary class="askly-user-menu-trigger" aria-label="Menu do usuário">
+                <span class="askly-user-avatar">
+                  {{ current_user.name[:1].upper() if current_user.is_authenticated else '?' }}
+                </span>
+                <span class="askly-user-details">
+                  <span class="askly-user-name">{{ current_user.name if current_user.is_authenticated else 'Usuário' }}</span>
+                  <span class="askly-user-role">{{ current_user.cargo.name if current_user.is_authenticated else '' }}</span>
+                </span>
+                <svg class="askly-user-menu-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </summary>
+
+              <div class="askly-user-menu-panel" role="menu">
+                <a href="{{ url_for('web_profile.configuracoes') }}" class="askly-user-menu-item {{ 'is-active' if request.endpoint == 'web_profile.configuracoes' else '' }}" role="menuitem">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                  </svg>
+                  Configurações
+                </a>
+
+                <button
+                  type="button"
+                  class="askly-user-menu-item"
+                  data-theme-toggle
+                  role="menuitem"
+                  aria-label="Alternar tema"
+                  title="Alternar tema"
+                >
+                  <svg class="askly-theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                  </svg>
+                  <svg class="askly-theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                  </svg>
+                  <span class="askly-theme-label-dark">Tema escuro</span>
+                  <span class="askly-theme-label-light">Tema claro</span>
+                </button>
+
+                <div class="askly-user-menu-sep" role="separator"></div>
+
+                <form method="post" action="{{ url_for('web_auth.logout') }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                  <button type="submit" class="askly-user-menu-item askly-user-menu-logout" role="menuitem">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                      <polyline points="16 17 21 12 16 7"></polyline>
+                      <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    Sair
+                  </button>
+                </form>
+              </div>
+            </details>
           </div>
         </header>
 
@@ -122,4 +207,35 @@
       </div>
     </main>
   </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+  var toggle = document.getElementById('menu-toggle');
+  var sidebar = document.getElementById('sidebar');
+  var overlay = document.getElementById('sidebar-overlay');
+
+  function openMenu() {
+    sidebar.classList.add('is-open');
+    overlay.classList.add('is-visible');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeMenu() {
+    sidebar.classList.remove('is-open');
+    overlay.classList.remove('is-visible');
+    document.body.style.overflow = '';
+  }
+
+  if (toggle && sidebar && overlay) {
+    toggle.addEventListener('click', openMenu);
+    overlay.addEventListener('click', closeMenu);
+
+    sidebar.querySelectorAll('a').forEach(function(link) {
+      link.addEventListener('click', closeMenu);
+    });
+  }
+})();
+</script>
 {% endblock %}

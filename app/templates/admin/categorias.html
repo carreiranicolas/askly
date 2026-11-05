@@ -1,61 +1,65 @@
-{% extends "layouts/base.html" %}
-{% block title %}Categorias | Admin | Askly{% endblock %}
+{% extends "layouts/app.html" %}
+{% block title %}Áreas | Admin | Askly{% endblock %}
+{% block page_title %}Administração · Áreas{% endblock %}
 
 {% block content %}
-  <h1 class="title">Admin · Categorias</h1>
-
-  <div class="box">
-    <h2 class="subtitle">Nova categoria</h2>
+  <div class="askly-card askly-stagger" style="margin-bottom: var(--ask-space-6); padding: var(--ask-space-6);">
+    <h3 style="font-size: var(--ask-text-sm); color: var(--ask-gray-500); text-transform: uppercase; letter-spacing: var(--ask-tracking-wide); margin-bottom: var(--ask-space-4); font-weight: 600;">Nova área</h3>
     <form method="post" action="{{ url_for('web_admin.criar_categoria') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-      <div class="columns">
-        <div class="column">
-          <div class="field">
-            <label class="label">Nome</label>
-            <div class="control">
-              <input class="input" type="text" name="nome" required />
-            </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--ask-space-4); margin-bottom: var(--ask-space-4);">
+        <div class="askly-field" style="margin-bottom: 0;">
+          <label class="askly-label">Nome</label>
+          <div class="askly-input-wrap">
+            <input class="askly-input" type="text" name="name" required />
           </div>
         </div>
-        <div class="column">
-          <div class="field">
-            <label class="label">Descrição</label>
-            <div class="control">
-              <input class="input" type="text" name="descricao" />
-            </div>
+        <div class="askly-field" style="margin-bottom: 0;">
+          <label class="askly-label">Descrição</label>
+          <div class="askly-input-wrap">
+            <input class="askly-input" type="text" name="description" />
           </div>
         </div>
       </div>
-      <button class="button is-link" type="submit">Criar</button>
+      <button class="askly-btn askly-btn--primary" type="submit">Criar</button>
     </form>
   </div>
 
-  <div class="table-container">
-    <table class="table is-fullwidth is-striped">
-      <thead>
-        <tr>
-          <th>Nome</th>
-          <th>Ativa</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for c in categorias %}
+  <div class="askly-card askly-stagger">
+    <div class="askly-table-wrapper">
+      <table class="askly-table">
+        <thead>
           <tr>
-            <td>{{ c.nome }}</td>
-            <td>{{ 'Sim' if c.ativa else 'Não' }}</td>
-            <td>
-              <form method="post" action="{{ url_for('web_admin.toggle_categoria', id=c.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                <button class="button is-light" type="submit">
-                  {{ 'Desativar' if c.ativa else 'Ativar' }}
-                </button>
-              </form>
-            </td>
+            <th>Nome</th>
+            <th>Descrição</th>
+            <th>Ativa</th>
+            <th>Ações</th>
           </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {% for c in categorias %}
+            <tr>
+              <td>{{ c.name }}</td>
+              <td>{{ c.description }}</td>
+              <td>{{ 'Sim' if c.is_active else 'Não' }}</td>
+              <td>
+                <form method="post" action="{{ url_for('web_admin.toggle_categoria', id=c.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                  <button class="askly-btn askly-btn--secondary" type="submit">
+                    {{ 'Desativar' if c.is_active else 'Ativar' }}
+                  </button>
+                </form>
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="4" class="askly-text-center" style="padding: var(--ask-space-8); color: var(--ask-gray-500);">
+                Nenhuma área cadastrada.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
 {% endblock %}
-
