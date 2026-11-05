@@ -50,6 +50,7 @@ Sobe o banco **e** a aplicação (gunicorn). O `entrypoint` aplica as migrations
 # 1) Variáveis de ambiente — SECRET_KEY é OBRIGATÓRIA aqui (FLASK_DEBUG=0)
 cp .env.example .env
 python -c "import secrets; print(secrets.token_hex(32))"   # cole no .env
+# Preencha ASKLY_ADMIN_PASSWORD e ASKLY_USER_PASSWORD no .env antes de subir.
 
 # 2) Build + subir db e app
 docker compose up -d --build
