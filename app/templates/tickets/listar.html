@@ -1,7 +1,7 @@
 {% extends "layouts/app.html" %}
-{% block title %}Chamados | Askly{% endblock %}
+{% block title %}Relatório de chamados | Askly{% endblock %}
 
-{% block page_title %}Chamados{% endblock %}
+{% block page_title %}Relatório de chamados{% endblock %}
 {% block page_actions %}
   <a class="askly-btn askly-btn--primary" href="{{ url_for('web_tickets.novo') }}">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -13,7 +13,7 @@
 {% endblock %}
 
 {% block content %}
-  {% set has_filters = filters.tipo or filters.categoria_id or filters.status or filters.priority_id or filters.sla or q %}
+  {% set has_filters = filters.tipo or filters.categoria_id or filters.status or filters.priority_id or filters.sla or filters.data or q %}
   <form method="get" action="{{ url_for('web_tickets.listar') }}" class="askly-card askly-filters askly-stagger">
     <div class="askly-filters__header">
       <h2 class="askly-filters__title">
@@ -34,7 +34,7 @@
           <select class="askly-input askly-input--no-icon" id="filter-tipo" name="tipo">
             <option value="" {{ 'selected' if not filters.tipo }}>Todos os chamados</option>
             <option value="meus" {{ 'selected' if filters.tipo == 'meus' }}>Chamados que abri</option>
-            <option value="atribuidos" {{ 'selected' if filters.tipo == 'atribuidos' }}>Atribuídos a mim</option>
+            {% if is_admin %}<option value="atribuidos" {{ 'selected' if filters.tipo == 'atribuidos' }}>Atribuídos a mim</option>{% endif %}
           </select>
         </div>
 
@@ -49,6 +49,11 @@
           </select>
         </div>
         {% endif %}
+
+        <div class="askly-filters__field">
+          <label class="askly-filter-label" for="filter-data">Data</label>
+          <input class="askly-input askly-input--no-icon" id="filter-data" type="date" name="data" value="{{ filters.data or '' }}" />
+        </div>
 
         <div class="askly-filters__field">
           <label class="askly-filter-label" for="filter-status">Status</label>
@@ -108,11 +113,13 @@
           <tr>
             <th>Nº</th>
             <th>Título</th>
+            <th>Item / Etiqueta</th>
+            <th>Descrição do problema</th>
             <th>Status</th>
             <th>Prioridade</th>
             <th>Área</th>
             <th>SLA</th>
-            <th>Criado em</th>
+            <th>Data</th>
           </tr>
         </thead>
         <tbody>
@@ -122,8 +129,10 @@
               <td>
                 <a href="{{ url_for('web_tickets.detalhe', id=c.id) }}">{{ c.title }}</a>
               </td>
+              <td>{{ c.item_name }} · {{ c.equipment_tag }}</td>
+              <td style="min-width: 220px; white-space: pre-wrap;">{{ c.description }}</td>
               <td>
-                <span class="askly-badge askly-badge--{{ 'neutral' if c.status.name == 'EM_ABERTO' else ('info' if c.status.name == 'EM_ATENDIMENTO' else ('warning' if c.status.name == 'EM_ESPERA' else ('success' if c.status.name == 'AGUARDANDO_APROVACAO' else 'neutral'))) }}">
+                <span class="askly-badge askly-badge--{{ 'success' if c.status.name == 'EM_ABERTO' else ('warning' if c.status.name == 'EM_ANDAMENTO' else 'danger') }}">
                   {{ c.status.value }}
                 </span>
               </td>
@@ -140,11 +149,11 @@
                   <span class="askly-badge askly-badge--neutral">No prazo</span>
                 {% endif %}
               </td>
-              <td>{{ c.created_at | local }}</td>
+              <td>{{ c.reported_date.strftime('%d/%m/%Y') }}</td>
             </tr>
           {% else %}
             <tr>
-              <td colspan="7" class="askly-text-center" style="padding: var(--ask-space-8); color: var(--ask-gray-500);">
+              <td colspan="9" class="askly-text-center" style="padding: var(--ask-space-8); color: var(--ask-gray-500);">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto var(--ask-space-4); opacity: 0.5; display: block;">
                   <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                   <line x1="3" y1="9" x2="21" y2="9"/>

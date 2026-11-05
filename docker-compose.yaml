@@ -26,6 +26,10 @@ services:
         condition: service_healthy
     environment:
       SECRET_KEY: ${SECRET_KEY:?defina SECRET_KEY no .env}
+      ASKLY_ADMIN_EMAIL: ${ASKLY_ADMIN_EMAIL:-admin@askly.local}
+      ASKLY_ADMIN_PASSWORD: ${ASKLY_ADMIN_PASSWORD:-}
+      ASKLY_USER_EMAIL: ${ASKLY_USER_EMAIL:-usuario@askly.local}
+      ASKLY_USER_PASSWORD: ${ASKLY_USER_PASSWORD:-}
       POSTGRES_USER: ${POSTGRES_USER:-askly}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-askly_dev_password}
       POSTGRES_DB: ${POSTGRES_DB:-askly_db}

@@ -112,15 +112,17 @@ flask db stamp head                  # marca o banco como atualizado sem rodar
 ## Seed (dados base)
 
 ```bash
-flask seed                           # popula cargos, áreas e prioridades (idempotente)
+flask seed                           # popula cargos, áreas, prioridades e contas iniciais
 ```
 
-Cria os cargos **Solicitante / Atendente / Admin**, as áreas (RH, Financeiro,
+Cria os cargos **Solicitante / Admin**, as áreas (RH, Financeiro,
 Comercial, Jurídico, Desenvolvimento, Infraestrutura) e as prioridades
-(Baixa, Média, Alta, Crítica). Rodar de novo não duplica nada.
+(Baixa, Média, Alta, Crítica) e as contas definidas pelas variáveis
+`ASKLY_ADMIN_EMAIL`, `ASKLY_ADMIN_PASSWORD`, `ASKLY_USER_EMAIL` e
+`ASKLY_USER_PASSWORD`. Rodar de novo não duplica nada.
 
 > No cadastro público (`/cadastro`) **não se escolhe cargo**: todo novo usuário
-> entra como **Solicitante**. A promoção a Atendente/Admin é feita pelo painel
+> entra como **Solicitante**. A promoção a Admin é feita pelo painel
 > `/admin/usuarios`.
 
 ---

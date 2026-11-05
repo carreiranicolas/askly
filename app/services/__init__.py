@@ -29,7 +29,5 @@ def belongs_to_ticket_area(user, ticket):
 
 
 def can_manage_ticket(user, ticket):
-    """Pode atribuir, alterar status etc.: admin ou membro da área do chamado."""
-    if is_admin(user):
-        return True
-    return belongs_to_ticket_area(user, ticket)
+    """Somente o administrador pode tratar chamados."""
+    return is_admin(user)

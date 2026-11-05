@@ -25,13 +25,14 @@ def _list_filters():
         "priority_id": request.args.get("priority_id", type=int) or None,
         "sla": sla,
         "q": (request.args.get("q") or "").strip() or None,
+        "data": (request.args.get("data") or "").strip() or None,
     }
 
 
 def _filter_page_args(filters):
     """Query string preservada na paginação."""
     args = {}
-    for key in ("tipo", "categoria_id", "status", "priority_id", "sla", "q"):
+    for key in ("tipo", "categoria_id", "status", "priority_id", "sla", "q", "data"):
         value = filters.get(key)
         if value:
             args[key] = value
@@ -42,7 +43,11 @@ def _filter_page_args(filters):
 @login_required
 def listar():
     filters = _list_filters()
-    query = ticket_service.tickets_query(current_user, **filters)
+    try:
+        query = ticket_service.tickets_query(current_user, **filters)
+    except ServiceError as exc:
+        flash(exc.message, "danger")
+        return redirect(url_for("web_tickets.listar"))
     pagination = query.paginate(
         page=request.args.get("page", 1, type=int),
         per_page=PER_PAGE,
@@ -74,6 +79,9 @@ def novo():
                 description=request.form.get("description", ""),
                 category_id=request.form.get("category_id", type=int),
                 priority_id=request.form.get("priority_id", type=int),
+                item_name=request.form.get("item_name", ""),
+                equipment_tag=request.form.get("equipment_tag", ""),
+                reported_date=request.form.get("reported_date", ""),
             )
         except ServiceError as exc:
             flash(exc.message, "danger")
@@ -108,7 +116,9 @@ def detalhe(id):
         historico=ticket_service.list_history(current_user, id),
         status_options=ticket_service.allowed_transitions(chamado.status) if pode_gerir else [],
         colegas_area=user_service.list_staff_for_area(chamado.category_id) if pode_gerir else [],
-        pode_aprovar=ticket_service.can_approve(current_user, chamado),
+        pode_cancelar=chamado.requester_id == current_user.id
+        and chamado.status == StatusEnum.EM_ABERTO
+        and chamado.assignee_id is None,
         sla_deadline=ticket_service.sla_deadline(chamado),
         sla_overdue=ticket_service.is_overdue(chamado),
         sla_remaining=ticket_service.sla_remaining_label(chamado),
@@ -143,23 +153,13 @@ def alterar_status(id):
     return redirect(url_for("web_tickets.detalhe", id=id))
 
 
-@web_tickets_bp.route("/<int:id>/aprovar", methods=["POST"])
+@web_tickets_bp.route("/<int:id>/cancelar", methods=["POST"])
 @login_required
-def aprovar(id):
+def cancelar(id):
     try:
-        ticket_service.approve_resolution(current_user, id, motivo=request.form.get("motivo"))
-        flash("Solução aprovada. Chamado fechado.", "success")
-    except ServiceError as exc:
-        flash(exc.message, "danger")
-    return redirect(url_for("web_tickets.detalhe", id=id))
-
-
-@web_tickets_bp.route("/<int:id>/recusar", methods=["POST"])
-@login_required
-def recusar(id):
-    try:
-        ticket_service.reject_resolution(current_user, id, motivo=request.form.get("motivo"))
-        flash("Solução recusada. O chamado foi reaberto para o responsável.", "info")
+        ticket_service.cancel_ticket(current_user, id)
+        flash("Chamado cancelado e excluído.", "success")
+        return redirect(url_for("web_tickets.listar"))
     except ServiceError as exc:
         flash(exc.message, "danger")
     return redirect(url_for("web_tickets.detalhe", id=id))

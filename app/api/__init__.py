@@ -30,7 +30,7 @@ api = Api(
         "**Autenticação:** JWT via header `Authorization: Bearer <token>`, "
         "obtido em `POST /auth/login`.\n\n"
         "**Controle de acesso (RBAC):** as permissões variam conforme o "
-        "perfil do usuário (ex.: Admin, Atendente, Solicitante) e a área "
+        "perfil do usuário (Admin ou Solicitante) e a área "
         "responsável pelo chamado."
     ),
     doc="/docs",

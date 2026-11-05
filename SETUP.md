@@ -27,16 +27,17 @@ pip install ".[dev,test]"
 cp .env.example .env
 # Gere uma SECRET_KEY e cole no .env:
 python -c "import secrets; print(secrets.token_hex(32))"
+# Defina também ASKLY_ADMIN_PASSWORD e ASKLY_USER_PASSWORD no .env.
 # Se a porta 5432 estiver ocupada, ajuste POSTGRES_PORT no .env.
 
 # 4) Subir a aplicação (aplica as migrations automaticamente no boot)
 flask run
 
-# 5) Em outro terminal (venv ativo): popular cargos, áreas e prioridades
+# 5) Em outro terminal (venv ativo): popular dados e duas contas iniciais
 flask seed
 ```
 
-Acesse **http://127.0.0.1:5000** → crie sua conta em `/cadastro`.
+Acesse **http://127.0.0.1:5000** com uma das contas definidas no `.env`.
 Documentação da API (Swagger): **http://127.0.0.1:5000/api/v1/docs**.
 
 ---
@@ -53,8 +54,7 @@ python -c "import secrets; print(secrets.token_hex(32))"   # cole no .env
 # 2) Build + subir db e app
 docker compose up -d --build
 
-# 3) Popular dados base
-docker compose exec app flask seed
+# O entrypoint aplica as migrations e cria os dados e contas iniciais.
 ```
 
 Acesse **http://localhost:8000**. Healthcheck em `/health`.
@@ -73,7 +73,8 @@ Acesse **http://localhost:8000**. Healthcheck em `/health`.
 
 ## Perfis (RBAC)
 
-Após o `seed`, existem os cargos **Solicitante**, **Atendente** e **Admin**, e
-as áreas RH, Financeiro, Comercial, Jurídico, Desenvolvimento e Infraestrutura.
-No cadastro, escolha cargo e área. Atendentes veem só os chamados da sua área;
-o Admin vê todos.
+Após o `seed`, existem os cargos **Solicitante** e **Admin**, e as áreas RH,
+Financeiro, Comercial, Jurídico, Desenvolvimento e Infraestrutura. O cadastro
+público cria Solicitantes. Eles veem apenas os próprios chamados; o Admin vê
+todos e pode alterar o status. Instalações antigas podem manter o cargo legado
+Atendente, que passa a ter as permissões de usuário comum.

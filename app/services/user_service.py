@@ -3,8 +3,9 @@ from app.models.category import Categoria
 from app.models.role import Cargo
 from app.models.user import Usuario
 
-from . import STAFF_ROLES
+from . import ROLE_ADMIN, ROLE_SOLICITANTE, STAFF_ROLES
 from .exceptions import NotFoundError, ValidationError
+
 
 def list_users():
     return Usuario.query.order_by(Usuario.name).all()
@@ -45,8 +46,16 @@ def update_user(user_id, name=None, role_id=None, area_id=None, is_active=None):
         cargo = db.session.get(Cargo, role_id)
         if cargo is None:
             raise ValidationError("Cargo informado não existe.")
-        if cargo.name not in STAFF_ROLES:
-            raise ValidationError("Selecione Admin ou Atendente.")
+        if cargo.name not in (ROLE_SOLICITANTE, ROLE_ADMIN):
+            raise ValidationError("Selecione Solicitante ou Admin.")
+        if user.cargo.name == ROLE_ADMIN and cargo.name != ROLE_ADMIN:
+            admins = (
+                Usuario.query.join(Cargo)
+                .filter(Cargo.name == ROLE_ADMIN, Usuario.is_active.is_(True))
+                .count()
+            )
+            if admins <= 1:
+                raise ValidationError("O último administrador não pode ser rebaixado.")
         user.role_id = role_id
     if area_id is not None:
         if db.session.get(Categoria, area_id) is None:

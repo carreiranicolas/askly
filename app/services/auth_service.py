@@ -43,9 +43,7 @@ def _default_role_id():
     """Cargo do cadastro público: Solicitante.
 
     Quem se cadastra abre e acompanha os próprios chamados. A promoção a
-    Atendente (técnico de uma área) ou Admin é feita por um administrador
-    no painel `/admin/usuarios` — manter Atendente como default expandiria
-    indevidamente a visibilidade do recém-cadastrado para toda a área.
+    Admin é feita por um administrador no painel `/admin/usuarios`.
     """
     cargo = Cargo.query.filter_by(name=ROLE_SOLICITANTE).first()
     if cargo is None:

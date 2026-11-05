@@ -7,8 +7,8 @@
     {% set cards = [
       ('Total', metrics.total, 'var(--ask-gray-900)'),
       ('Em aberto', metrics.abertos, 'var(--ask-info)'),
-      ('Aguardando aprovação', metrics.aguardando_aprovacao, 'var(--ask-warning)'),
-      ('Fechados', metrics.fechados, 'var(--ask-success)'),
+      ('Em andamento', metrics.em_andamento, 'var(--ask-warning)'),
+      ('Finalizados', metrics.finalizados, 'var(--ask-danger)'),
       ('Atrasados (SLA)', metrics.atrasados, 'var(--ask-danger)'),
     ] %}
     {% for label, value, color in cards %}

@@ -2,14 +2,14 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 
 from app.routes.decorators import admin_required
-from app.services import STAFF_ROLES, catalog_service, user_service
+from app.services import ROLE_ADMIN, ROLE_SOLICITANTE, catalog_service, user_service
 from app.services.exceptions import ServiceError
 
 web_admin_bp = Blueprint("web_admin", __name__, url_prefix="/admin")
 
 
 def _staff_cargos():
-    return [c for c in catalog_service.list_cargos() if c.name in STAFF_ROLES]
+    return [c for c in catalog_service.list_cargos() if c.name in (ROLE_SOLICITANTE, ROLE_ADMIN)]
 
 
 @web_admin_bp.route("/usuarios")
@@ -28,7 +28,7 @@ def usuarios():
 def alterar_perfil(id):
     role_id = request.form.get("role_id", type=int)
     if not role_id:
-        flash("Selecione Admin ou Atendente.", "danger")
+        flash("Selecione Solicitante ou Admin.", "danger")
         return redirect(url_for("web_admin.usuarios"))
     try:
         user_service.update_user(

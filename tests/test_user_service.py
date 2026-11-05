@@ -72,12 +72,12 @@ def test_get_user_inexistente_gera_not_found(app):
 
 
 def test_update_user_promove_cargo(app, make_user, cargo_ids):
-    """Admin promovendo um Solicitante a Atendente deve trocar o cargo."""
+    """Admin promovendo um Solicitante a Admin deve trocar o cargo."""
     make_user(role="Solicitante", email="sol@test.com", area="RH")
     with app.app_context():
         uid = _user_id("sol@test.com")
-        atualizado = user_service.update_user(uid, role_id=cargo_ids["Atendente"])
-        assert atualizado.cargo.name == "Atendente"
+        atualizado = user_service.update_user(uid, role_id=cargo_ids["Admin"])
+        assert atualizado.cargo.name == "Admin"
 
 
 def test_update_user_cargo_inexistente_gera_validacao(app, make_user):
@@ -89,8 +89,8 @@ def test_update_user_cargo_inexistente_gera_validacao(app, make_user):
             user_service.update_user(uid, role_id=999999)
 
 
-def test_update_user_rejeita_cargo_solicitante(app, make_user, cargo_ids):
-    """No painel admin só Admin e Atendente são cargos válidos."""
+def test_update_user_rejeita_cargo_legado(app, make_user, cargo_ids):
+    """O cargo legado Atendente não pode ser atribuído no painel."""
     import pytest
 
     from app.models.user import Usuario
@@ -100,6 +100,14 @@ def test_update_user_rejeita_cargo_solicitante(app, make_user, cargo_ids):
     make_user(role="Solicitante", email="sol-role@test.com")
     with app.app_context():
         uid = Usuario.query.filter_by(email="sol-role@test.com").first().id
+        with pytest.raises(ValidationError):
+            user_service.update_user(uid, role_id=cargo_ids["Atendente"])
+
+
+def test_last_active_admin_cannot_be_demoted(app, make_user, cargo_ids):
+    email, _ = make_user(role="Admin", email="only-admin@test.com")
+    with app.app_context():
+        uid = _user_id(email)
         with pytest.raises(ValidationError):
             user_service.update_user(uid, role_id=cargo_ids["Solicitante"])
 

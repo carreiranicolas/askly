@@ -511,7 +511,7 @@
         <div class="adm-modal__field">
           <label for="adm-edit-role">Cargo</label>
           <select class="askly-input askly-input--no-icon" id="adm-edit-role" name="role_id" required>
-            <option value="" disabled id="adm-edit-role-placeholder">Promover para…</option>
+            <option value="" disabled id="adm-edit-role-placeholder">Selecione um perfil…</option>
             {% for cargo in cargos %}
               <option value="{{ cargo.id }}">{{ cargo.name }}</option>
             {% endfor %}

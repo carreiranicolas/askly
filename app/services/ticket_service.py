@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from sqlalchemy import func, or_
 
@@ -16,16 +16,14 @@ from .exceptions import NotFoundError, PermissionDenied, ValidationError
 # Estados em que o SLA não corre (pausado ou encerrado).
 _SLA_PAUSED = (
     StatusEnum.EM_ABERTO,
-    StatusEnum.EM_ESPERA,
-    StatusEnum.AGUARDANDO_APROVACAO,
-    StatusEnum.FECHADO,
+    StatusEnum.FINALIZADO,
 )
-_SLA_RUNNING = (StatusEnum.EM_ATENDIMENTO,)
-_OPEN = (StatusEnum.EM_ABERTO, StatusEnum.EM_ATENDIMENTO, StatusEnum.EM_ESPERA)
+_SLA_RUNNING = (StatusEnum.EM_ANDAMENTO,)
+_OPEN = (StatusEnum.EM_ABERTO, StatusEnum.EM_ANDAMENTO)
 
 
 def parse_status(value):
-    """Aceita o nome do enum (EM_ATENDIMENTO) ou o rótulo (Em atendimento)."""
+    """Aceita o nome do enum (EM_ANDAMENTO) ou o rótulo (Em andamento)."""
     if isinstance(value, StatusEnum):
         return value
     if value is None:
@@ -41,16 +39,10 @@ def parse_status(value):
 
 def allowed_transitions(current):
     """Transições válidas a partir do status atual (máquina de estados)."""
-    if current == StatusEnum.FECHADO:
-        return [StatusEnum.EM_ATENDIMENTO]
     if current == StatusEnum.EM_ABERTO:
-        return []
-    if current == StatusEnum.AGUARDANDO_APROVACAO:
-        return []
-    if current == StatusEnum.EM_ATENDIMENTO:
-        return [StatusEnum.EM_ESPERA, StatusEnum.AGUARDANDO_APROVACAO]
-    if current == StatusEnum.EM_ESPERA:
-        return [StatusEnum.EM_ATENDIMENTO, StatusEnum.AGUARDANDO_APROVACAO]
+        return [StatusEnum.EM_ANDAMENTO, StatusEnum.FINALIZADO]
+    if current == StatusEnum.EM_ANDAMENTO:
+        return [StatusEnum.FINALIZADO]
     return []
 
 
@@ -103,34 +95,24 @@ def _can_view(user, ticket):
         return True
     if ticket.requester_id == user.id:
         return True
-    if ticket.assignee_id == user.id:
-        return True
-    if user.area_id is not None and ticket.category_id == user.area_id:
-        return True
     return False
 
 
-def tickets_query(user, tipo=None, categoria_id=None, q=None, status=None, priority_id=None, sla=None):
+def tickets_query(
+    user, tipo=None, categoria_id=None, q=None, status=None, priority_id=None, sla=None, data=None
+):
     """Query de chamados já com RBAC + filtros (para listar/paginar/contar).
 
-    Regra principal: quem tem área vê a fila dela + chamados que abriu;
-    admin vê tudo; sem área vê só os próprios chamados.
+    Admin vê todos; os demais veem apenas os próprios chamados.
     """
     query = Chamado.query
 
     if tipo == "meus":
         query = query.filter(Chamado.requester_id == user.id)
-    elif tipo == "atribuidos":
+    elif tipo == "atribuidos" and is_admin(user):
         query = query.filter(Chamado.assignee_id == user.id)
     elif is_admin(user):
         pass
-    elif user.area_id is not None:
-        query = query.filter(
-            or_(
-                Chamado.category_id == user.area_id,
-                Chamado.requester_id == user.id,
-            )
-        )
     else:
         query = query.filter(Chamado.requester_id == user.id)
 
@@ -140,6 +122,11 @@ def tickets_query(user, tipo=None, categoria_id=None, q=None, status=None, prior
         query = query.filter(Chamado.status == parse_status(status))
     if priority_id:
         query = query.filter(Chamado.priority_id == priority_id)
+    if data:
+        try:
+            query = query.filter(Chamado.reported_date == date.fromisoformat(data))
+        except ValueError as exc:
+            raise ValidationError("Data inválida.") from exc
     if sla in ("atrasado", "no_prazo"):
         query = query.join(Prioridade, Chamado.priority_id == Prioridade.id)
         # Postgres: make_interval(years, months, weeks, days, hours, …)
@@ -159,10 +146,12 @@ def tickets_query(user, tipo=None, categoria_id=None, q=None, status=None, prior
         else:
             like = f"%{term}%"
             query = query.filter(or_(Chamado.title.ilike(like), Chamado.description.ilike(like)))
-    return query.order_by(Chamado.created_at.desc())
+    return query.order_by(Chamado.reported_date.desc(), Chamado.created_at.desc())
 
 
-def list_tickets(user, tipo=None, categoria_id=None, q=None, status=None, priority_id=None, sla=None):
+def list_tickets(
+    user, tipo=None, categoria_id=None, q=None, status=None, priority_id=None, sla=None, data=None
+):
     return tickets_query(
         user,
         tipo=tipo,
@@ -171,11 +160,18 @@ def list_tickets(user, tipo=None, categoria_id=None, q=None, status=None, priori
         status=status,
         priority_id=priority_id,
         sla=sla,
+        data=data,
     ).all()
 
 
-def get_ticket(user, ticket_id):
-    ticket = db.session.get(Chamado, ticket_id)
+def get_ticket(user, ticket_id, for_update=False):
+    ticket = (
+        db.session.execute(
+            db.select(Chamado).where(Chamado.id == ticket_id).with_for_update()
+        ).scalar_one_or_none()
+        if for_update
+        else db.session.get(Chamado, ticket_id)
+    )
     if ticket is None:
         raise NotFoundError("Chamado não encontrado.")
     if not _can_view(user, ticket):
@@ -187,9 +183,13 @@ TITLE_MIN_LENGTH = 2
 TITLE_MAX_LENGTH = 150
 
 
-def create_ticket(user, title, description, category_id, priority_id):
+def create_ticket(
+    user, title, description, category_id, priority_id, item_name, equipment_tag, reported_date
+):
     title = (title or "").strip()
     description = (description or "").strip()
+    item_name = (item_name or "").strip()
+    equipment_tag = (equipment_tag or "").strip()
 
     if len(title) < TITLE_MIN_LENGTH:
         raise ValidationError(f"O título precisa ter ao menos {TITLE_MIN_LENGTH} caracteres.")
@@ -197,6 +197,14 @@ def create_ticket(user, title, description, category_id, priority_id):
         raise ValidationError(f"O título pode ter no máximo {TITLE_MAX_LENGTH} caracteres.")
     if not description:
         raise ValidationError("A descrição é obrigatória.")
+    if not item_name or len(item_name) > 150:
+        raise ValidationError("Informe o nome do item (até 150 caracteres).")
+    if not equipment_tag or len(equipment_tag) > 100:
+        raise ValidationError("Informe o número da etiqueta (até 100 caracteres).")
+    try:
+        reported_date = date.fromisoformat(reported_date)
+    except (TypeError, ValueError) as exc:
+        raise ValidationError("Informe uma data válida.") from exc
 
     categoria = db.session.get(Categoria, category_id) if category_id else None
     if categoria is None:
@@ -215,6 +223,9 @@ def create_ticket(user, title, description, category_id, priority_id):
     ticket = Chamado(
         title=title,
         description=description,
+        item_name=item_name,
+        equipment_tag=equipment_tag,
+        reported_date=reported_date,
         category_id=category_id,
         priority_id=priority_id,
         requester_id=user.id,
@@ -225,9 +236,9 @@ def create_ticket(user, title, description, category_id, priority_id):
     return ticket
 
 
-def _record_transition(user, ticket, target, motivo=None, *, skip_validation=False):
+def _record_transition(user, ticket, target, motivo=None):
     """Aplica a transição validando a máquina de estados e gera auditoria."""
-    if not skip_validation and target not in allowed_transitions(ticket.status):
+    if target not in allowed_transitions(ticket.status):
         raise ValidationError(
             f"Transição inválida: de '{ticket.status.value}' para '{target.value}'."
         )
@@ -248,84 +259,18 @@ def _record_transition(user, ticket, target, motivo=None, *, skip_validation=Fal
 
 
 def change_status(user, ticket_id, new_status, motivo=None):
-    ticket = get_ticket(user, ticket_id)
+    ticket = get_ticket(user, ticket_id, for_update=True)
     target = parse_status(new_status)
-
-    if ticket.status == target:
-        raise ValidationError("O chamado já está nesse status.")
-
-    role = role_of(user)
-
-    if ticket.status == StatusEnum.AGUARDANDO_APROVACAO:
-        raise PermissionDenied(
-            "Este chamado aguarda aprovação de quem abriu. Use Aprovar ou Recusar."
-        )
-
-    skip_validation = False
-    if ticket.status == StatusEnum.FECHADO and target == StatusEnum.EM_ATENDIMENTO:
-        if role != ROLE_ADMIN:
-            raise PermissionDenied("Apenas administradores podem reabrir chamados fechados.")
-        if ticket.assignee_id is None:
-            target = StatusEnum.EM_ABERTO
-            skip_validation = True
-
     if not can_manage_ticket(user, ticket):
-        raise PermissionDenied("Você não pode alterar o status deste chamado.")
-
-    if ticket.status == StatusEnum.EM_ABERTO:
-        raise ValidationError("Atribua um responsável ao chamado antes de alterar o status.")
-
-    if ticket.assignee_id is None:
-        raise ValidationError("Atribua um responsável ao chamado antes de alterar o status.")
-
-    _record_transition(user, ticket, target, motivo, skip_validation=skip_validation)
-    return ticket
-
-
-def can_approve(user, ticket):
-    """Quem abriu o chamado pode aprovar a solução quando aguarda aprovação."""
-    return ticket.status == StatusEnum.AGUARDANDO_APROVACAO and ticket.requester_id == user.id
-
-
-def _require_pending_approval(user, ticket_id):
-    ticket = get_ticket(user, ticket_id)
-    if ticket.requester_id != user.id:
-        raise PermissionDenied("Apenas quem abriu o chamado pode avaliar a solução.")
-    if ticket.status != StatusEnum.AGUARDANDO_APROVACAO:
-        raise ValidationError("Este chamado não está aguardando aprovação.")
-    return ticket
-
-
-def approve_resolution(user, ticket_id, motivo=None):
-    """Quem abriu o chamado aprova a solução, fechando-o automaticamente."""
-    ticket = _require_pending_approval(user, ticket_id)
-    _record_transition(
-        user,
-        ticket,
-        StatusEnum.FECHADO,
-        motivo=motivo or "Solução aprovada por quem abriu o chamado.",
-        skip_validation=True,
-    )
-    return ticket
-
-
-def reject_resolution(user, ticket_id, motivo=None):
-    """Quem abriu recusa a solução: o chamado reabre para o responsável retomar."""
-    ticket = _require_pending_approval(user, ticket_id)
-    _record_transition(
-        user,
-        ticket,
-        StatusEnum.EM_ATENDIMENTO,
-        motivo=motivo or "Solução recusada por quem abriu o chamado.",
-        skip_validation=True,
-    )
+        raise PermissionDenied("Apenas administradores podem alterar o status.")
+    _record_transition(user, ticket, target, motivo)
     return ticket
 
 
 def assign_ticket(actor, ticket_id, assignee_id):
-    ticket = get_ticket(actor, ticket_id)
+    ticket = get_ticket(actor, ticket_id, for_update=True)
     if not can_manage_ticket(actor, ticket):
-        raise PermissionDenied("Apenas membros da área do chamado podem atribuir responsáveis.")
+        raise PermissionDenied("Apenas administradores podem atribuir responsáveis.")
 
     assignee = db.session.get(Usuario, assignee_id)
     if assignee is None:
@@ -340,13 +285,28 @@ def assign_ticket(actor, ticket_id, assignee_id):
         _record_transition(
             actor,
             ticket,
-            StatusEnum.EM_ATENDIMENTO,
+            StatusEnum.EM_ANDAMENTO,
             motivo="Responsável atribuído.",
-            skip_validation=True,
         )
     else:
         db.session.commit()
     return ticket
+
+
+def cancel_ticket(user, ticket_id):
+    ticket = db.session.execute(
+        db.select(Chamado).where(Chamado.id == ticket_id).with_for_update()
+    ).scalar_one_or_none()
+    if ticket is None:
+        raise NotFoundError("Chamado não encontrado.")
+    if ticket.requester_id != user.id:
+        raise PermissionDenied("Só quem abriu pode cancelar o chamado.")
+    if ticket.status != StatusEnum.EM_ABERTO or ticket.assignee_id is not None:
+        raise ValidationError("O atendimento já foi iniciado; não é possível cancelar.")
+    HistoricoStatus.query.filter_by(ticket_id=ticket.id).delete()
+    Comentario.query.filter_by(ticket_id=ticket.id).delete()
+    db.session.delete(ticket)
+    db.session.commit()
 
 
 def list_history(user, ticket_id):
@@ -397,10 +357,8 @@ def dashboard_metrics(user):
     return {
         "total": len(tickets),
         "abertos": em_aberto,
-        "aguardando_aprovacao": sum(
-            1 for t in tickets if t.status == StatusEnum.AGUARDANDO_APROVACAO
-        ),
-        "fechados": sum(1 for t in tickets if t.status == StatusEnum.FECHADO),
+        "em_andamento": sum(1 for t in tickets if t.status == StatusEnum.EM_ANDAMENTO),
+        "finalizados": sum(1 for t in tickets if t.status == StatusEnum.FINALIZADO),
         "atrasados": overdue,
         "por_status": sorted(by_status.items(), key=lambda kv: kv[0]),
         "por_area": sorted(by_area.items(), key=lambda kv: kv[0]),
@@ -426,7 +384,7 @@ def _close_timestamps(ticket_ids):
         return {}
     rows = HistoricoStatus.query.filter(
         HistoricoStatus.ticket_id.in_(ticket_ids),
-        HistoricoStatus.new_status == StatusEnum.FECHADO.value,
+        HistoricoStatus.new_status.in_((StatusEnum.FINALIZADO.value, "Fechado")),
     ).all()
     closed_at = {}
     for r in rows:
@@ -476,7 +434,9 @@ def sla_report(user):
                 "remaining_label": label,
             }
         )
-    ativos.sort(key=lambda r: (not r["overdue"], r["deadline"] is None, r["deadline"] or datetime.max))
+    ativos.sort(
+        key=lambda r: (not r["overdue"], r["deadline"] is None, r["deadline"] or datetime.max)
+    )
 
     atrasados = sum(1 for r in ativos if r["overdue"])
     vence_24h = 0
@@ -494,7 +454,7 @@ def sla_report(user):
         "sem_responsavel": sum(1 for t in tickets if t.status == StatusEnum.EM_ABERTO),
     }
 
-    closed = [t for t in tickets if t.status == StatusEnum.FECHADO]
+    closed = [t for t in tickets if t.status == StatusEnum.FINALIZADO]
     closed_at = _close_timestamps([t.id for t in closed])
 
     # Admin vê todas as áreas cadastradas; demais usuários só as que aparecem

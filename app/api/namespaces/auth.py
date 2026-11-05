@@ -82,7 +82,7 @@ class Register(Resource):
         """Cria uma conta e já devolve o token (entra autenticado).
 
         O registro público sempre cria usuários com cargo Solicitante.
-        Promoção a Atendente ou Admin é feita por um administrador.
+        Promoção a Admin é feita por um administrador.
         """
         data = ns.payload
         user = auth_service.register(

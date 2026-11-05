@@ -3,7 +3,7 @@
 Diferente de `test_tickets.py` (que bate na API REST com JWT), aqui exercitamos
 a interface web com sessão por cookie (`web_login`). Validamos que as telas
 renderizam e que os formulários (abrir chamado, comentar, mudar status,
-atribuir, aprovar/recusar) chamam o serviço e redirecionam corretamente.
+atribuir e cancelar) chamam o serviço e redirecionam corretamente.
 
 Convenção do projeto: as rotas web seguem o padrão Post/Redirect/Get — um POST
 bem-sucedido responde 302 (redirect) e a mensagem aparece como flash.
@@ -27,6 +27,9 @@ def _abrir_chamado_web(client, catalog, titulo="Sem acesso ao ERP"):
             "description": "Descrição do problema",
             "category_id": str(catalog["categoria"]),
             "priority_id": str(catalog["prioridade"]),
+            "item_name": "Computador",
+            "equipment_tag": "PAT-123",
+            "reported_date": "2026-11-05",
         },
         follow_redirects=False,
     )
@@ -70,12 +73,12 @@ def test_listar_filtro_por_status(client, make_user, web_login, catalog):
     email, _ = make_user(role="Solicitante", email="sol@test.com", area="Infraestrutura")
     web_login(email)
     _abrir_chamado_web(client, catalog, titulo="Chamado na fila")
-    page = client.get("/chamados/?status=FECHADO", follow_redirects=True)
+    page = client.get("/chamados/?status=FINALIZADO", follow_redirects=True)
     assert page.status_code == 200
     assert b"Chamado na fila" not in page.data
     page_aberto = client.get("/chamados/?status=EM_ABERTO", follow_redirects=True)
     assert b"Chamado na fila" in page_aberto.data
-    page_atendimento = client.get("/chamados/?status=EM_ATENDIMENTO", follow_redirects=True)
+    page_atendimento = client.get("/chamados/?status=EM_ANDAMENTO", follow_redirects=True)
     assert b"Chamado na fila" not in page_atendimento.data
 
 
@@ -143,6 +146,20 @@ def test_fluxo_atribuir_e_mudar_status_web(app, client, make_user, web_login, ca
 
     status = client.post(
         f"/chamados/{ticket_id}/status",
-        data={"status": StatusEnum.EM_ESPERA.name, "motivo": "Aguardando cliente"},
+        data={"status": StatusEnum.FINALIZADO.name, "motivo": "Aguardando cliente"},
     )
     assert status.status_code == 302
+
+
+def test_web_cancel_excludes_open_ticket(app, client, make_user, web_login, catalog):
+    from app.models.ticket import Chamado
+
+    owner, _ = make_user(email="dono-cancel@test.com")
+    web_login(owner)
+    path = _abrir_chamado_web(client, catalog).headers["Location"]
+    detail = client.get(path).get_data(as_text=True)
+    assert "Cancelar e excluir" in detail
+    assert "PAT-123" in detail
+    assert client.post(f"{path}/cancelar").status_code == 302
+    with app.app_context():
+        assert Chamado.query.count() == 0

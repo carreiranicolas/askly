@@ -30,7 +30,7 @@ def test_painel_usuarios_ok_para_admin(client, make_user, web_login):
 
 
 def test_admin_altera_cargo_e_area_de_usuario(app, client, make_user, web_login, cargo_ids, areas):
-    """Admin promove um Solicitante a Atendente e define a área dele."""
+    """Admin promove um Solicitante a Admin e define a área dele."""
     make_user(role="Solicitante", email="sol@test.com", area="RH")
     adm_email, _ = make_user(role="Admin", email="adm@test.com")
     web_login(adm_email)
@@ -39,7 +39,7 @@ def test_admin_altera_cargo_e_area_de_usuario(app, client, make_user, web_login,
     resp = client.post(
         f"/admin/usuarios/{sol_id}/cargo",
         data={
-            "role_id": str(cargo_ids["Atendente"]),
+            "role_id": str(cargo_ids["Admin"]),
             "area_id": str(areas["Infraestrutura"]),
         },
     )
@@ -48,7 +48,7 @@ def test_admin_altera_cargo_e_area_de_usuario(app, client, make_user, web_login,
     # Confirma a persistência da promoção.
     with app.app_context():
         atualizado = Usuario.query.filter_by(email="sol@test.com").first()
-        assert atualizado.cargo.name == "Atendente"
+        assert atualizado.cargo.name == "Admin"
         assert atualizado.area_id == areas["Infraestrutura"]
 
 

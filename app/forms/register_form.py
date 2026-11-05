@@ -15,7 +15,7 @@ class RegisterForm(FlaskForm):
 
     O cargo não é escolhido no cadastro público: todo novo usuário entra como
     Solicitante (abre e acompanha os próprios chamados). A promoção a
-    Atendente ou Admin é feita pelo painel admin (`/admin/usuarios`).
+    Admin é feita pelo painel admin (`/admin/usuarios`).
     """
 
     name = StringField("Nome Completo", validators=[DataRequired(), Length(min=2, max=100)])

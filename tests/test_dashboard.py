@@ -3,7 +3,7 @@ def test_dashboard_requires_login(client):
 
 
 def test_dashboard_metrics_scoped_by_area(app, make_user, areas):
-    """Admin vê todos os chamados; o técnico (Atendente) só os da própria área."""
+    """Admin vê todos; qualquer outro perfil vê apenas os próprios."""
     from app.models.priority import Prioridade
     from app.models.user import Usuario
     from app.services import ticket_service
@@ -19,7 +19,14 @@ def test_dashboard_metrics_scoped_by_area(app, make_user, areas):
         pid = Prioridade.query.first().id
 
         ticket_service.create_ticket(
-            sol, title="RH", description="x", category_id=areas["RH"], priority_id=pid
+            sol,
+            title="RH",
+            description="x",
+            category_id=areas["RH"],
+            priority_id=pid,
+            item_name="Computador",
+            equipment_tag="PAT-123",
+            reported_date="2026-11-05",
         )
         ticket_service.create_ticket(
             sol,
@@ -27,16 +34,19 @@ def test_dashboard_metrics_scoped_by_area(app, make_user, areas):
             description="x",
             category_id=areas["Infraestrutura"],
             priority_id=pid,
+            item_name="Computador",
+            equipment_tag="PAT-123",
+            reported_date="2026-11-05",
         )
 
-        # Atendente de RH só conta o chamado da própria área.
-        assert ticket_service.dashboard_metrics(rh)["total"] == 1
+        # O perfil legado Atendente também fica restrito aos próprios chamados.
+        assert ticket_service.dashboard_metrics(rh)["total"] == 0
         # Admin contabiliza todos.
         assert ticket_service.dashboard_metrics(adm)["total"] == 2
 
 
 def test_dashboard_em_aberto_counts_active_states(app, make_user, areas):
-    """'Em aberto' inclui Em aberto, Em atendimento e Em espera."""
+    """Abertos inclui Em aberto e Em andamento."""
     from app.models.priority import Prioridade
     from app.models.user import Usuario
     from app.services import ticket_service
@@ -57,6 +67,9 @@ def test_dashboard_em_aberto_counts_active_states(app, make_user, areas):
             description="Descrição do chamado.",
             category_id=areas["RH"],
             priority_id=pid,
+            item_name="Computador",
+            equipment_tag="PAT-123",
+            reported_date="2026-11-05",
         )
 
         m = ticket_service.dashboard_metrics(adm)
@@ -66,14 +79,10 @@ def test_dashboard_em_aberto_counts_active_states(app, make_user, areas):
         m = ticket_service.dashboard_metrics(adm)
         assert m["abertos"] == 1
 
-        ticket_service.change_status(rh, t.id, "EM_ESPERA")
-        m = ticket_service.dashboard_metrics(adm)
-        assert m["abertos"] == 1
-
-        ticket_service.change_status(rh, t.id, "AGUARDANDO_APROVACAO")
+        ticket_service.change_status(adm, t.id, "FINALIZADO")
         m = ticket_service.dashboard_metrics(adm)
         assert m["abertos"] == 0
-        assert m["aguardando_aprovacao"] == 1
+        assert m["finalizados"] == 1
 
 
 def test_fresh_ticket_is_not_overdue(app, make_user, areas):
@@ -96,11 +105,18 @@ def test_fresh_ticket_is_not_overdue(app, make_user, areas):
         db.session.commit()
 
         t = ticket_service.create_ticket(
-            sol, title="novo", description="x", category_id=areas["RH"], priority_id=p.id
+            sol,
+            title="novo",
+            description="x",
+            category_id=areas["RH"],
+            priority_id=p.id,
+            item_name="Computador",
+            equipment_tag="PAT-123",
+            reported_date="2026-11-05",
         )
         assert ticket_service.is_overdue(db.session.get(Chamado, t.id)) is False
 
-        # SLA só corre após atribuição (Em atendimento).
+        # SLA só corre em Em andamento.
         old = db.session.get(Chamado, t.id)
         old.created_at = datetime.now(timezone.utc) - timedelta(hours=5)
         db.session.commit()
@@ -160,21 +176,41 @@ def test_sla_report_resumo_e_areas_sem_fechamento(app, make_user, areas):
         pid = Prioridade.query.first().id
 
         t1 = ticket_service.create_ticket(
-            sol, title="Atrasado", description="x", category_id=areas["RH"], priority_id=pid
+            sol,
+            title="Atrasado",
+            description="x",
+            category_id=areas["RH"],
+            priority_id=pid,
+            item_name="Computador",
+            equipment_tag="PAT-123",
+            reported_date="2026-11-05",
         )
         t1.created_at = datetime.now(timezone.utc) - timedelta(hours=10)
         db.session.commit()
 
-        t2 = ticket_service.create_ticket(
-            sol, title="Sem dono", description="x", category_id=areas["RH"], priority_id=pid
+        ticket_service.create_ticket(
+            sol,
+            title="Sem dono",
+            description="x",
+            category_id=areas["RH"],
+            priority_id=pid,
+            item_name="Computador",
+            equipment_tag="PAT-123",
+            reported_date="2026-11-05",
         )
 
         t3 = ticket_service.create_ticket(
-            sol, title="Fechado ok", description="x", category_id=areas["RH"], priority_id=pid
+            sol,
+            title="Fechado ok",
+            description="x",
+            category_id=areas["RH"],
+            priority_id=pid,
+            item_name="Computador",
+            equipment_tag="PAT-123",
+            reported_date="2026-11-05",
         )
         ticket_service.assign_ticket(adm, t3.id, rh.id)
-        ticket_service.change_status(rh, t3.id, "AGUARDANDO_APROVACAO")
-        ticket_service.approve_resolution(sol, t3.id)
+        ticket_service.change_status(adm, t3.id, "FINALIZADO")
 
         report = ticket_service.sla_report(adm)
         assert report["resumo"]["correndo"] == 2
@@ -232,6 +268,9 @@ def test_web_search_filters(client, make_user, api_login, catalog):
                 "description": "x",
                 "category_id": catalog["categoria"],
                 "priority_id": catalog["prioridade"],
+                "item_name": "Computador",
+                "equipment_tag": "PAT-123",
+                "reported_date": "2026-11-05",
             },
             headers=headers,
         )

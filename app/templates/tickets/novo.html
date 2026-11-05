@@ -150,6 +150,21 @@
     <form class="novo-form" method="post">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
+      <div class="askly-field">
+        <label class="askly-label" for="chamado-data">Data</label>
+        <input id="chamado-data" class="askly-input askly-input--no-icon" type="date" name="reported_date" required />
+      </div>
+
+      <div class="askly-field">
+        <label class="askly-label" for="chamado-item">Nome do item</label>
+        <input id="chamado-item" class="askly-input askly-input--no-icon" type="text" name="item_name" maxlength="150" placeholder="Ex: Impressora HP LaserJet" required />
+      </div>
+
+      <div class="askly-field">
+        <label class="askly-label" for="chamado-etiqueta">Número da etiqueta do equipamento</label>
+        <input id="chamado-etiqueta" class="askly-input askly-input--no-icon" type="text" name="equipment_tag" maxlength="100" required />
+      </div>
+
       <!-- Título -->
       <div class="askly-field">
         <label class="askly-label" for="chamado-titulo">Título</label>
@@ -189,7 +204,7 @@
 
       <!-- Área -->
       <div class="askly-field">
-        <label class="askly-label" for="chamado-area">Área responsável</label>
+        <label class="askly-label" for="chamado-area">Setor (área responsável)</label>
         <div class="askly-input-wrap">
           <svg class="askly-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="12 2 2 7 12 12 22 7 12 2"/>

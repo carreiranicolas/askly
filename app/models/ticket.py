@@ -1,5 +1,5 @@
 import enum
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -14,10 +14,8 @@ if TYPE_CHECKING:
 
 class StatusEnum(enum.Enum):
     EM_ABERTO = "Em aberto"
-    EM_ATENDIMENTO = "Em atendimento"
-    EM_ESPERA = "Em espera"
-    AGUARDANDO_APROVACAO = "Aguardando aprovação"
-    FECHADO = "Fechado"
+    EM_ANDAMENTO = "Em andamento"
+    FINALIZADO = "Finalizado"
 
 
 class Chamado(db.Model):
@@ -33,12 +31,13 @@ class Chamado(db.Model):
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
     title: Mapped[str] = mapped_column(db.String(150), nullable=False)
     description: Mapped[str] = mapped_column(db.Text, nullable=False)
+    item_name: Mapped[str] = mapped_column(db.String(150), nullable=False)
+    equipment_tag: Mapped[str] = mapped_column(db.String(100), nullable=False)
+    reported_date: Mapped[date] = mapped_column(db.Date, nullable=False)
     priority_id: Mapped[int] = mapped_column(
         db.Integer, db.ForeignKey("prioridades.id"), nullable=False
     )
-    status: Mapped[StatusEnum] = mapped_column(
-        db.Enum(StatusEnum), default=StatusEnum.EM_ABERTO
-    )
+    status: Mapped[StatusEnum] = mapped_column(db.Enum(StatusEnum), default=StatusEnum.EM_ABERTO)
     requester_id: Mapped[int] = mapped_column(
         db.Integer, db.ForeignKey("usuarios.id"), nullable=False
     )

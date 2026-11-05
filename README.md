@@ -1,6 +1,6 @@
 # Askly (MVP) — Gestão de Chamados Internos
 
-Plataforma web para **gestão de chamados internos** (MVP), construída em **Flask 3.x + PostgreSQL (Docker)**, com **Clean Architecture**, **RBAC** (Solicitante/Atendente/Admin), **auditoria obrigatória de status** e **UI em Bulma**.
+Plataforma web para **gestão de chamados internos** (MVP), construída em **Flask 3.x + PostgreSQL (Docker)**, com **RBAC** (Solicitante/Admin), **auditoria de status** e **UI em Bulma**.
 
 ## Sumário
 
@@ -14,7 +14,7 @@ Plataforma web para **gestão de chamados internos** (MVP), construída em **Fla
   - [XSS / CSP / Security Headers](#xss--csp--security-headers)
   - [Tokenização (JWT) na API](#tokenização-jwt-na-api)
   - [Hash de senha](#hash-de-senha)
-  - [RBAC (Solicitante / Atendente / Admin)](#rbac-solicitante--atendente--admin)
+  - [RBAC (Solicitante / Admin)](#rbac-solicitante--admin)
   - [Rate limiting](#rate-limiting)
 - [Auditoria obrigatória de mudança de status](#auditoria-obrigatória-de-mudança-de-status)
 - [Testes](#testes)
@@ -47,25 +47,26 @@ app/
 
 ## Setup rápido
 
-### 1) Banco de dados (PostgreSQL via Docker)
+### 1) Variáveis de ambiente
 
 ```bash
-docker compose up -d
+cp .env.example .env
+# defina SECRET_KEY, ASKLY_ADMIN_PASSWORD e ASKLY_USER_PASSWORD
+# ajuste POSTGRES_PORT/credenciais conforme o seu docker-compose
 ```
 
-### 2) Ambiente Python
+### 2) Banco de dados (PostgreSQL via Docker)
+
+```bash
+docker compose up -d db
+```
+
+### 3) Ambiente Python
 
 ```bash
 python -m venv venv
 source venv/bin/activate #Linux/Mac
 pip install .
-```
-
-### 3) Variáveis de ambiente
-
-```bash
-cp .env.example .env
-# ajuste POSTGRES_PORT/credenciais conforme o seu docker-compose
 ```
 
 O `.flaskenv` já define `FLASK_APP=app` e `FLASK_DEBUG=1`, então não é
@@ -80,14 +81,16 @@ flask run
 Ao subir o servidor, as migrations pendentes são aplicadas automaticamente
 no Postgres (`flask db upgrade`), criando o banco com todas as tabelas.
 
-### 5) Dados base (cargos, categorias, prioridades)
+### 5) Dados base e contas iniciais
 
 ```bash
 flask seed
 ```
 
-Necessário para que o cadastro tenha cargos selecionáveis e os chamados
-tenham categorias/prioridades. É idempotente.
+Cria os cargos, áreas, prioridades e as contas configuradas por
+`ASKLY_ADMIN_EMAIL`/`ASKLY_ADMIN_PASSWORD` e
+`ASKLY_USER_EMAIL`/`ASKLY_USER_PASSWORD`. É idempotente. No Docker, o
+`entrypoint` executa esse comando automaticamente.
 
 ## API REST
 
@@ -95,7 +98,7 @@ tenham categorias/prioridades. É idempotente.
 - Autenticação **JWT Bearer**: `POST /api/v1/auth/login` (ou `/auth/register`)
   devolve `access_token`; envie `Authorization: Bearer <token>` nas demais rotas.
 - Namespaces: `auth`, `usuarios`, `cargos`, `categorias`, `prioridades`,
-  `chamados` (com `/status`, `/atribuir`, `/comentarios`, `/historico`).
+  `chamados` (com `/status`, `/comentarios`, `/historico` e `DELETE` para cancelar).
 - Escrita em catálogos (cargos/categorias/prioridades) e gestão de usuários
   exigem perfil **Admin** (RBAC por decorator).
 

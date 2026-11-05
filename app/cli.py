@@ -1,13 +1,16 @@
+import os
+
 import click
 
 from .models import db
 from .models.category import Categoria
 from .models.priority import Prioridade
 from .models.role import Cargo
+from .models.user import Usuario
+from .services import auth_service
 
 CARGOS = [
     ("Solicitante", "Abre e acompanha os próprios chamados."),
-    ("Atendente", "Atende e resolve chamados atribuídos."),
     ("Admin", "Administra usuários, categorias e o sistema."),
 ]
 
@@ -58,4 +61,19 @@ def register_commands(app):
                 created += 1
 
         db.session.commit()
+        for role, prefix, name in (
+            ("Admin", "ASKLY_ADMIN", "Administrador"),
+            ("Solicitante", "ASKLY_USER", "Usuário comum"),
+        ):
+            cargo = Cargo.query.filter_by(name=role).one()
+            if Usuario.query.filter_by(role_id=cargo.id).first():
+                continue
+            email = os.environ.get(f"{prefix}_EMAIL", "").strip()
+            password = os.environ.get(f"{prefix}_PASSWORD", "")
+            if not email or not password:
+                raise click.ClickException(
+                    f"Defina {prefix}_EMAIL e {prefix}_PASSWORD para criar o usuário inicial."
+                )
+            auth_service.register(name, email, password, role_id=cargo.id)
+            created += 1
         click.echo(f"Seed concluído. {created} novo(s) registro(s) inserido(s).")
